@@ -72,11 +72,7 @@ Rectangle {
 
     Loader {
         id: pinOverlay
-        anchors {
-            fill: parent
-            topMargin: containment ? containment.availableScreenRect.y : 0
-            bottomMargin: parent.height - containment ? (containment.availableScreenRect.height + containment.availableScreenRect.y) : 0
-        }
+        anchors. fill: parent
         z: 222
         source: Qt.resolvedUrl("Pin.qml")
     }

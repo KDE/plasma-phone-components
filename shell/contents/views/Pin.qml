@@ -34,6 +34,8 @@ PlasmaCore.ColorScope {
     visible: simManager.pinRequired != OfonoSimManager.NoPin
     property OfonoSimManager simManager: ofonoSimManager
 
+    property string pin
+
     function addNumber(number) {
         pinLabel.text = pinLabel.text + number
     }
@@ -43,154 +45,175 @@ PlasmaCore.ColorScope {
         anchors.fill: parent
         
         color: PlasmaCore.ColorScope.backgroundColor
+        opacity: 0.9
+    }
 
-        OfonoManager {
-            id: ofonoManager
-            onAvailableChanged: {
-            console.log("Ofono is " + available)
-            }
-            onModemAdded: {
-                console.log("modem added " + modem)
-            }
-            onModemRemoved: console.log("modem removed")
+    OfonoManager {
+        id: ofonoManager
+        onAvailableChanged: {
+        console.log("Ofono is " + available)
         }
-
-        OfonoConnMan {
-            id: ofono1
-            Component.onCompleted: {
-                console.log(ofonoManager.modems)
-            }
-            modemPath: ofonoManager.modems.length > 0 ? ofonoManager.modems[0] : ""
+        onModemAdded: {
+            console.log("modem added " + modem)
         }
+        onModemRemoved: console.log("modem removed")
+    }
 
-        OfonoModem {
-            id: modem1
-            modemPath: ofonoManager.modems.length > 0 ? ofonoManager.modems[0] : ""
-
+    OfonoConnMan {
+        id: ofono1
+        Component.onCompleted: {
+            console.log(ofonoManager.modems)
         }
+        modemPath: ofonoManager.modems.length > 0 ? ofonoManager.modems[0] : ""
+    }
 
-        OfonoContextConnection {
-            id: context1
-            contextPath : ofono1.contexts.length > 0 ? ofono1.contexts[0] : ""
-            Component.onCompleted: {
-                print("Context Active: " + context1.active)
-            }
-            onActiveChanged: {
-                print("Context Active: " + context1.active)
-            }
+    OfonoModem {
+        id: modem1
+        modemPath: ofonoManager.modems.length > 0 ? ofonoManager.modems[0] : ""
+
+    }
+
+    OfonoContextConnection {
+        id: context1
+        contextPath : ofono1.contexts.length > 0 ? ofono1.contexts[0] : ""
+        Component.onCompleted: {
+            print("Context Active: " + context1.active)
         }
-
-        OfonoSimManager {
-            id: ofonoSimManager
-            modemPath: ofonoManager.modems.length > 0 ? ofonoManager.modems[0] : ""
+        onActiveChanged: {
+            print("Context Active: " + context1.active)
         }
+    }
 
-        OfonoNetworkOperator {
-            id: netop
+    OfonoSimManager {
+        id: ofonoSimManager
+        modemPath: ofonoManager.modems.length > 0 ? ofonoManager.modems[0] : ""
+    }
+
+    OfonoNetworkOperator {
+        id: netop
+    }
+
+    MouseArea {
+        anchors.fill: parent
+    }
+
+    Connections {
+        target: simManager
+        onEnterPinComplete: {
+            print("Enter Pin complete: " + error + " " + errorString)
         }
+    }
 
-        MouseArea {
-            anchors.fill: parent
-        }
+    ColumnLayout {
+        id: passwordLayout
+        anchors.bottom: parent.bottom
 
-        Connections {
-            target: simManager
-            onEnterPinComplete: {
-                print("Enter Pin complete: " + error + " " + errorString)
-            }
-        }
+        width: parent.width
+        spacing: units.gridUnit * 2
 
-        ColumnLayout {
-            id: dialPadArea
-
-            anchors {
-                fill: parent
-                margins: 20
-            }
-            PlasmaComponents.Label {
-                Layout.fillWidth: true
-                horizontalAlignment: Qt.AlignHCenter
-                verticalAlignment: Qt.AlignVCenter
-                text: {
-                    switch (simManager.pinRequired) {
+        PlasmaComponents.Label {
+            Layout.alignment: Qt.AlignHCenter
+            text: {
+                switch (simManager.pinRequired) {
                     case OfonoSimManager.NoPin: return i18n("No pin (error)");
                     case OfonoSimManager.SimPin: return i18n("Enter Sim PIN");
                     case OfonoSimManager.SimPin2: return i18n("Enter Sim PIN 2");
                     case OfonoSimManager.SimPuk: return i18n("Enter Sim PUK");
                     case OfonoSimManager.SimPuk2: return i18n("Enter Sim PUK 2");
                     default: return i18n("Unknown PIN type: %1", simManager.pinRequired);
-                    }
                 }
             }
-            PlasmaComponents.Label {
-                Layout.fillWidth: true
-                horizontalAlignment: Qt.AlignHCenter
-                verticalAlignment: Qt.AlignVCenter
-                text: simManager.pinRetries && simManager.pinRetries[simManager.pinRequired] ? i18np("%1 attempt left", "%1 attempts left", simManager.pinRetries[simManager.pinRequired]) : "";
-            }
+            font.pointSize: 12
+        }
 
-            RowLayout {
-                Layout.fillWidth: true
-                Controls.TextField {
-                    id: pinLabel
-                    readOnly: true
-                    echoMode: TextInput.Password
-                    activeFocusOnPress: false
+        PlasmaComponents.Label {
+            Layout.alignment: Qt.AlignHCenter
+            text: simManager.pinRetries && simManager.pinRetries[simManager.pinRequired] ? i18np("%1 attempt left", "%1 attempts left", simManager.pinRetries[simManager.pinRequired]) : "";
+        }
+
+        Row {
+            id: dotDisplay
+            Layout.alignment: Qt.AlignHCenter
+            spacing: 6
+
+            Layout.minimumHeight: units.gridUnit
+            Layout.maximumWidth: parent.width
+
+            Repeater {
+                model: root.pin.length
+                delegate: Rectangle {
+                    width: units.gridUnit
+                    height: width
+                    radius: width
+                    color: Qt.rgba(255, 255, 255, 0.3)
+                }
+            }
+        }
+
+        GridLayout {
+            id: numBlock
+            property string thePw
+
+            Layout.fillWidth: true
+            Layout.minimumHeight: units.gridUnit * 16
+            Layout.maximumWidth: root.width
+            Layout.bottomMargin: units.gridUnit * 2
+            Layout.leftMargin: units.gridUnit * 2
+            Layout.rightMargin: units.gridUnit * 2
+            rowSpacing: units.gridUnit
+
+            columns: 3
+
+            Repeater {
+                model: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "R", "0", "E"]
+                delegate: Item {
                     Layout.fillWidth: true
-                    horizontalAlignment: Qt.AlignRight
-                    verticalAlignment: Qt.AlignVCenter
-                }
-                PlasmaComponents.Button {
-                    visible: pinLabel.text != ""
-                    iconSource: "edit-clear"
-                    width: height
-                    onClicked: {
-                        pinLabel.text = pinLabel.text.substring(0, pinLabel.text.length - 1);
+                    Layout.fillHeight: true
+
+                    Rectangle {
+                        anchors.centerIn: parent
+                        width: units.gridUnit * 3
+                        height: width
+                        radius: 12
+                        color: Qt.rgba(PlasmaCore.ColorScope.backgroundColor.r, PlasmaCore.ColorScope.backgroundColor.g, PlasmaCore.ColorScope.backgroundColor.b, ma.pressed ? 0.8 : 0.3)
+                        visible: modelData.length > 0
+
+                        MouseArea {
+                            id: ma
+                            anchors.fill: parent
+                            onClicked: {
+                                if (modelData === "R") {
+                                    root.pin = root.pin.substr(0, root.pin.length - 1);
+                                } else if (modelData === "E") {
+                                    simManager.enterPin(simManager.pinRequired, root.pin)
+                                    root.pin = ""
+                                } else {
+                                    root.pin += modelData
+                                }
+                            }
+                        }
                     }
-                }
-            }
 
-            Grid {
-                id: pad
-                columns: 3
-                spacing: 0
-                property int buttonHeight: height / 5
-
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-
-                DialerButton { id: one; text: "1"; color: PlasmaCore.ColorScope.textColor } 
-                DialerButton { text: "2"; color: PlasmaCore.ColorScope.textColor }
-                DialerButton { text: "3"; color: PlasmaCore.ColorScope.textColor }
-
-                DialerButton { text: "4"; color: PlasmaCore.ColorScope.textColor } 
-                DialerButton { text: "5"; color: PlasmaCore.ColorScope.textColor }
-                DialerButton { text: "6"; color: PlasmaCore.ColorScope.textColor }
-
-                DialerButton { text: "7"; color: PlasmaCore.ColorScope.textColor } 
-                DialerButton { text: "8"; color: PlasmaCore.ColorScope.textColor }
-                DialerButton { text: "9"; color: PlasmaCore.ColorScope.textColor }
-
-                DialerButton { text: "*"; color: PlasmaCore.ColorScope.textColor } 
-                DialerButton { text: "0"; sub: "+"; color: PlasmaCore.ColorScope.textColor }
-                DialerButton {
-                    text: "#"
-                    color: PlasmaCore.ColorScope.textColor
-                    callback: function () {
-                        simManager.enterPin(simManager.pinRequired, pinLabel.text)
-                        pinLabel.text = "";
+                    PlasmaComponents.Label {
+                        visible: modelData !== "R" && modelData !== "E"
+                        text: modelData
+                        anchors.centerIn: parent
+                        font.pointSize: 16
                     }
-                }
-            }
-            PlasmaComponents.Button {
-                anchors {
-                    top: pad.bottom
-                    horizontalCenter: parent.horizontalCenter
-                }
-                text: i18n("OK")
-                onClicked: {
-                    simManager.enterPin(simManager.pinRequired, pinLabel.text)
-                    pinLabel.text = "";
+
+                    PlasmaCore.IconItem {
+                        visible: modelData === "R"
+                        anchors.centerIn: parent
+                        colorGroup: PlasmaCore.Theme.ComplementaryColorGroup
+                        source: "edit-clear"
+                    }
+
+                    PlasmaCore.IconItem {
+                        visible: modelData === "E"
+                        anchors.centerIn: parent
+                        colorGroup: PlasmaCore.Theme.ComplementaryColorGroup
+                        source: "go-next"
+                    }
                 }
             }
         }
