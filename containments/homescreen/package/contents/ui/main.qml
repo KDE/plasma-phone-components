@@ -20,12 +20,15 @@
 import QtQuick 2.12
 import QtQuick.Window 2.12
 import QtQuick.Layouts 1.1
+import QtQuick.Controls 2.12
 import QtGraphicalEffects 1.0
 
 import org.kde.plasma.plasmoid 2.0
 import org.kde.plasma.core 2.0 as PlasmaCore
 import org.kde.plasma.components 3.0 as PlasmaComponents
 import org.kde.draganddrop 2.0 as DragDrop
+
+import org.kde.kirigami 2.12 as Kirigami
 
 import "launcher" as Launcher
 
@@ -34,6 +37,8 @@ import org.kde.plasma.private.containmentlayoutmanager 1.0 as ContainmentLayoutM
 import org.kde.phone.homescreen 1.0
 
 import org.kde.plasma.private.mobileshell 1.0 as MobileShell
+
+import org.kde.plasma.wallpapers.image 2.0 as Wallpaper
 
 Item {
     id: root
@@ -142,68 +147,249 @@ Item {
         launcherGrid: launcher
         favoriteStrip: favoriteStrip
     }
-
+    
+    PlasmaCore.Svg {
+        id: arrowsSvg
+        imagePath: "widgets/arrows"
+        colorGroup: PlasmaCore.Theme.ComplementaryColorGroup
+    }
+    
+    Wallpaper.Image {
+        id: wallpaper
+    }
+    Image {
+        id: imageWallpaper
+        source: wallpaper.wallpaperPath
+        anchors.fill: parent
+        fillMode: Image.Pad
+        verticalAlignment: Image.AlignBottom;
+        visible: false
+        sourceSize.width: root.width
+        sourceSize.height: root.height
+    }
+    FastBlur {
+        id: blur
+        cached: true
+        source: imageWallpaper
+        anchors.fill: parent
+        radius: 50
+        opacity: Math.min(1, mainFlickable.openProgress*2)
+    }
     Rectangle {
+        id: appDrawer
+        anchors.fill: parent
+        color: Qt.rgba(255, 255, 255, 0.65)
+        opacity: Math.min(1, mainFlickable.openProgress*2)
+    }
+    
+    SwipeView {
+        id: desktopPages
+        currentIndex: 0
+        anchors.fill: parent
+        
+        opacity: 1-Math.min(1, mainFlickable.openProgress*2)
+        
+        DragDrop.DropArea {
+            anchors.left: parent.left
+            anchors.right: parent.right
+            height: parent.height //TODO: multiple widgets pages
+
+            onDragEnter: event.accept(event.proposedAction);
+            onDragMove: {
+                appletsLayout.showPlaceHolderAt(
+                    Qt.rect(event.x - appletsLayout.defaultItemWidth / 2,
+                    event.y - appletsLayout.defaultItemHeight / 2,
+                    appletsLayout.defaultItemWidth,
+                    appletsLayout.defaultItemHeight)
+                );
+            }
+            onDragLeave: appletsLayout.hidePlaceHolder();
+            //preventStealing: true TODO determine if necessary
+
+            onDrop: {
+                plasmoid.processMimeData(event.mimeData,
+                            event.x - appletsLayout.placeHolder.width / 2, event.y - appletsLayout.placeHolder.height / 2);
+                event.accept(event.proposedAction);
+                appletsLayout.hidePlaceHolder();
+            }
+
+            ContainmentLayoutManager.AppletsLayout {
+                id: appletsLayout
+
+                anchors.fill: parent
+
+                cellWidth: Math.floor(width / launcher.columns)
+                cellHeight: launcher.cellHeight
+
+                configKey: width > height ? "ItemGeometriesHorizontal" : "ItemGeometriesVertical"
+                containment: plasmoid
+                editModeCondition: plasmoid.immutable
+                        ? ContainmentLayoutManager.AppletsLayout.Manual
+                        : ContainmentLayoutManager.AppletsLayout.AfterPressAndHold
+
+                // Sets the containment in edit mode when we go in edit mode as well
+                onEditModeChanged: plasmoid.editMode = editMode
+
+                minimumItemWidth: units.gridUnit * 3
+                minimumItemHeight: minimumItemWidth
+
+                defaultItemWidth: units.gridUnit * 6
+                defaultItemHeight: defaultItemWidth
+
+                //cellWidth: units.iconSizes.small
+                //cellHeight: cellWidth
+
+                acceptsAppletCallback: function(applet, x, y) {
+                    print("Applet: "+applet+" "+x+" "+y)
+                    return true;
+                }
+
+                appletContainerComponent: ContainmentLayoutManager.BasicAppletContainer {
+                    id: appletContainer
+                    configOverlayComponent: ConfigOverlay {}
+
+                    onEditModeChanged: {
+                        launcherDragManager.active = dragActive || editMode;
+                    }
+                    onDragActiveChanged: {
+                        launcherDragManager.active = dragActive || editMode;
+                    }
+                }
+
+                placeHolder: ContainmentLayoutManager.PlaceHolder {}
+            }
+        }
+
+        Launcher.LauncherGrid {
+            id: launcher
+            anchors.left: parent.left
+            anchors.right: parent.right
+            favoriteStrip: favoriteStrip
+            appletsLayout: appletsLayout
+        }
+    }
+    
+    // arrow icon
+    MouseArea {
+        id: arrowUpIcon
+        z: 9
         anchors {
             left: parent.left
             right: parent.right
-            leftMargin: -1
-            rightMargin: -1
+            bottom: favoriteStrip.top
+            margins: -units.smallSpacing
         }
-        border.color: Qt.rgba(1, 1, 1, 0.5)
-        radius: units.gridUnit
-        color: "black"
-        opacity: 0.4 * Math.min(1, mainFlickable.contentY / (units.gridUnit * 10))
-        height: root.height + radius * 2
-        y: Math.max(-radius, -mainFlickable.contentY + arrowUpIcon.y)
+        property real factor: Math.max(0, Math.min(1, mainFlickable.contentY / (mainFlickable.height/2)))
+
+        height: units.iconSizes.medium
+        onClicked: {
+            if (mainFlickable.contentY >= mainFlickable.height/2) {
+                scrollAnim.to = 0;
+            } else {
+                scrollAnim.to = mainFlickable.height/2
+            }
+            scrollAnim.restart();
+        }
+        Item {
+            anchors.centerIn: parent
+            opacity: 1-Math.min(1, mainFlickable.openProgress*2)
+
+            width: units.iconSizes.medium
+            height: width
+
+            Rectangle {
+                anchors {
+                    verticalCenter: parent.verticalCenter
+                    right: parent.horizontalCenter
+                    left: parent.left
+                    verticalCenterOffset: -arrowUpIcon.height/4 + (arrowUpIcon.height/4) * arrowUpIcon.factor
+                }
+                color: theme.backgroundColor
+                transformOrigin: Item.Right
+                rotation: -45 + 90 * arrowUpIcon.factor
+                antialiasing: true
+                height: 1
+            }
+            Rectangle {
+                anchors {
+                    verticalCenter: parent.verticalCenter
+                    left: parent.horizontalCenter
+                    right: parent.right
+                    verticalCenterOffset: -arrowUpIcon.height/4 + (arrowUpIcon.height/4) * arrowUpIcon.factor
+                }
+                color: theme.backgroundColor
+                transformOrigin: Item.Left
+                rotation: 45 - 90 * arrowUpIcon.factor
+                antialiasing: true
+                height: 1
+            }
+        }
+    }
+    
+    // favourite strip
+    MouseArea {
+        anchors.fill: favoriteStrip
+        property real oldMouseY
+        onPressed: oldMouseY = mouse.y
+        onPositionChanged: {
+            mainFlickable.contentY -= mouse.y - oldMouseY;
+            oldMouseY = mouse.y;
+        }
+        onReleased: {
+            mainFlickable.flick(0, 1);
+        }
+    }
+    Launcher.FavoriteStrip {
+        id: favoriteStrip
+        opacity: 1-Math.min(1, mainFlickable.openProgress*2)
+        anchors {
+            left: parent.left
+            right: parent.right
+            bottom: parent.bottom
+            bottomMargin: plasmoid.screenGeometry.height - plasmoid.availableScreenRect.height - plasmoid.availableScreenRect.y
+        }
+        appletsLayout: appletsLayout
+        launcherGrid: launcher2
+        //y: Math.max(krunner.inputHeight, root.height - height - mainFlickable.contentY)
     }
 
     Flickable {
         id: mainFlickable
-        width: parent.width
+        property double openProgress: contentY > parent.height ? 1 : contentY / parent.height
+        
+        boundsBehavior: Flickable.DragOverBounds
         clip: true
-        anchors {
-            fill: parent
-            //topMargin: plasmoid.availableScreenRect.y
-            bottomMargin: favoriteStrip.height + plasmoid.screenGeometry.height - plasmoid.availableScreenRect.height - plasmoid.availableScreenRect.y
-        }
-
-        //bottomMargin: favoriteStrip.height
-        contentWidth: width
-        contentHeight: flickableContents.height
-        interactive: !plasmoid.editMode && !launcherDragManager.active
-
+        anchors.fill: parent
+        
         signal cancelEditModeForItemsRequested
         onDragStarted: cancelEditModeForItemsRequested()
         onDragEnded: cancelEditModeForItemsRequested()
-        onFlickStarted: cancelEditModeForItemsRequested()
         onFlickEnded: cancelEditModeForItemsRequested()
+        onFlickStarted: {
+            cancelEditModeForItemsRequested()
+            if (openProgress !== 1) {
+                if (verticalVelocity < 0) {
+                    scrollAnim.to = 0;
+                    scrollAnim.restart();
+                } else {
+                    scrollAnim.to = parent.height;
+                    scrollAnim.restart();
+                }
+            }
+        }
+
+        width: parent.width
+        contentWidth: width
+        contentHeight: flickableContents.height + plasmoid.availableScreenRect.height
+        interactive: !plasmoid.editMode && !launcherDragManager.active
 
         onContentYChanged: MobileShell.HomeScreenControls.homeScreenPosition = contentY
 
-        PlasmaComponents.ScrollBar.vertical: PlasmaComponents.ScrollBar {
-            id: scrollabr
-            opacity: mainFlickable.moving
-            interactive: false
-            enabled: false
-            Behavior on opacity {
-                OpacityAnimator {
-                    duration: units.longDuration * 2
-                    easing.type: Easing.InOutQuad
-                }
-            }
-            implicitWidth: Math.round(units.gridUnit/3)
-            contentItem: Rectangle {
-                radius: width/2
-                color: Qt.rgba(1, 1, 1, 0.3)
-                border.color: Qt.rgba(0, 0, 0, 0.4)
-            }
-        }
         NumberAnimation {
             id: scrollAnim
             target: mainFlickable
             properties: "contentY"
-            duration: units.longDuration
+            duration: units.longDuration * 2
             easing.type: Easing.InOutQuad
         }
 
@@ -211,21 +397,24 @@ Item {
             id: flickableContents
             width: mainFlickable.width
             spacing: 0
-
+            opacity: mainFlickable.openProgress
+            
             Item {
                 width: 1
                 height: plasmoid.availableScreenRect.y
             }
+            
+            Kirigami.Heading {
+                level: 1
+                text: i18n("Applications")
+            }
+            
             DragDrop.DropArea {
-                anchors {
-                    left: parent.left
-                    right: parent.right
-                }
-                height: mainFlickable.height - plasmoid.availableScreenRect.y //TODO: multiple widgets pages
+                anchors.left: parent.left
+                anchors.right: parent.right
+                height: mainFlickable.height - plasmoid.availableScreenRect.y
 
-                onDragEnter: {
-                    event.accept(event.proposedAction);
-                }
+                onDragEnter: event.accept(event.proposedAction);
                 onDragMove: {
                     appletsLayout.showPlaceHolderAt(
                         Qt.rect(event.x - appletsLayout.defaultItemWidth / 2,
@@ -235,10 +424,7 @@ Item {
                     );
                 }
 
-                onDragLeave: {
-                    appletsLayout.hidePlaceHolder();
-                }
-
+                onDragLeave: appletsLayout.hidePlaceHolder();
                 preventStealing: true
 
                 onDrop: {
@@ -248,73 +434,13 @@ Item {
                     appletsLayout.hidePlaceHolder();
                 }
 
-                PlasmaCore.Svg {
-                    id: arrowsSvg
-                    imagePath: "widgets/arrows"
-                    colorGroup: PlasmaCore.Theme.ComplementaryColorGroup
-                }
-                MouseArea {
-                    id: arrowUpIcon
-                    z: 9
-                    anchors {
-                        left: parent.left
-                        right: parent.right
-                        bottom: parent.bottom
-                        margins: -units.smallSpacing
-                    }
-                    property real factor: Math.max(0, Math.min(1, mainFlickable.contentY / (mainFlickable.height/2)))
-
-                    height: units.iconSizes.medium
-                    onClicked: {
-                        if (mainFlickable.contentY >= mainFlickable.height/2) {
-                            scrollAnim.to = 0;
-                        } else {
-                            scrollAnim.to = mainFlickable.height/2
-                        }
-                        scrollAnim.restart();
-                    }
-                    Item {
-                        anchors.centerIn: parent
-
-                        width: units.iconSizes.medium
-                        height: width
-
-                        Rectangle {
-                            anchors {
-                                verticalCenter: parent.verticalCenter
-                                right: parent.horizontalCenter
-                                left: parent.left
-                                verticalCenterOffset: -arrowUpIcon.height/4 + (arrowUpIcon.height/4) * arrowUpIcon.factor
-                            }
-                            color: theme.backgroundColor
-                            transformOrigin: Item.Right
-                            rotation: -45 + 90 * arrowUpIcon.factor
-                            antialiasing: true
-                            height: 1
-                        }
-                        Rectangle {
-                            anchors {
-                                verticalCenter: parent.verticalCenter
-                                left: parent.horizontalCenter
-                                right: parent.right
-                                verticalCenterOffset: -arrowUpIcon.height/4 + (arrowUpIcon.height/4) * arrowUpIcon.factor
-                            }
-                            color: theme.backgroundColor
-                            transformOrigin: Item.Left
-                            rotation: 45 - 90 * arrowUpIcon.factor
-                            antialiasing: true
-                            height: 1
-                        }
-                    }
-                }
-
                 ContainmentLayoutManager.AppletsLayout {
-                    id: appletsLayout
+                    id: drawerAppletsLayout
 
                     anchors.fill: parent
 
-                    cellWidth: Math.floor(width / launcher.columns)
-                    cellHeight: launcher.cellHeight
+                    cellWidth: Math.floor(width / launcher2.columns)
+                    cellHeight: launcher2.cellHeight
 
                     configKey: width > height ? "ItemGeometriesHorizontal" : "ItemGeometriesVertical"
                     containment: plasmoid
@@ -331,9 +457,6 @@ Item {
                     defaultItemWidth: units.gridUnit * 6
                     defaultItemHeight: defaultItemWidth
 
-                    //cellWidth: units.iconSizes.small
-                    //cellHeight: cellWidth
-
                     acceptsAppletCallback: function(applet, x, y) {
                         print("Applet: "+applet+" "+x+" "+y)
                         return true;
@@ -343,12 +466,8 @@ Item {
                         id: appletContainer
                         configOverlayComponent: ConfigOverlay {}
 
-                        onEditModeChanged: {
-                            launcherDragManager.active = dragActive || editMode;
-                        }
-                        onDragActiveChanged: {
-                            launcherDragManager.active = dragActive || editMode;
-                        }
+                        onEditModeChanged: launcherDragManager.active = dragActive || editMode;
+                        onDragActiveChanged: launcherDragManager.active = dragActive || editMode;
                     }
 
                     placeHolder: ContainmentLayoutManager.PlaceHolder {}
@@ -356,7 +475,7 @@ Item {
             }
 
             Launcher.LauncherGrid {
-                id: launcher
+                id: launcher2
                 anchors {
                     left: parent.left
                     right: parent.right
@@ -365,78 +484,9 @@ Item {
                     scrollAnim.to = 0;
                     scrollAnim.restart();
                 }
-                favoriteStrip: favoriteStrip
-                appletsLayout: appletsLayout
+                appletsLayout: drawerAppletsLayout
             }
         }
-    }
-
-    ScrollIndicator {
-        id: scrollUpIndicator
-        anchors {
-            top: parent.top
-            topMargin: units.gridUnit * 2
-        }
-        elementId: "up-arrow"
-    }
-    ScrollIndicator {
-        id: scrollDownIndicator
-        anchors {
-            bottom: favoriteStrip.top
-            bottomMargin: units.gridUnit
-        }
-        elementId: "down-arrow"
-    }
-
-    Rectangle {
-        anchors {
-            left: parent.left
-            right: parent.right
-            bottom: favoriteStrip.top
-            leftMargin: units.gridUnit
-            rightMargin: units.gridUnit
-        }
-        height: 1
-        gradient: Gradient {
-            orientation: Gradient.Horizontal
-            GradientStop { position: 0.0; color: Qt.rgba(1, 1, 1, 0) }
-            GradientStop { position: 0.15; color: Qt.rgba(1, 1, 1, 0.5) }
-            GradientStop { position: 0.5; color: Qt.rgba(1, 1, 1, 1) }
-            GradientStop { position: 0.85; color: Qt.rgba(1, 1, 1, 0.5) }
-            GradientStop { position: 1.0; color: Qt.rgba(1, 1, 1, 0) }
-        }
-        opacity: mainFlickable.contentY > 0 ? 0.6 : 0
-        Behavior on opacity {
-            OpacityAnimator {
-                duration: units.longDuration * 2
-                easing.type: Easing.InOutQuad
-            }
-        }
-    }
-
-    MouseArea {
-        anchors.fill:favoriteStrip
-        property real oldMouseY
-        onPressed: oldMouseY = mouse.y
-        onPositionChanged: {
-            mainFlickable.contentY -= mouse.y - oldMouseY;
-            oldMouseY = mouse.y;
-        }
-        onReleased: {
-            mainFlickable.flick(0, 1);
-        }
-    }
-    Launcher.FavoriteStrip {
-        id: favoriteStrip
-        anchors {
-            left: parent.left
-            right: parent.right
-            bottom: parent.bottom
-            bottomMargin: plasmoid.screenGeometry.height - plasmoid.availableScreenRect.height - plasmoid.availableScreenRect.y
-        }
-        appletsLayout: appletsLayout
-        launcherGrid: launcher
-        //y: Math.max(krunner.inputHeight, root.height - height - mainFlickable.contentY)
     }
 }
 

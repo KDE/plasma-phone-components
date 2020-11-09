@@ -187,9 +187,9 @@ ContainmentLayoutManager.ItemContainer {
                 layer.enabled: true//model.applicationLocation == ApplicationListModel.Desktop
                 layer.effect: DropShadow {
                     horizontalOffset: 0
-                    verticalOffset: 2
+                    verticalOffset: 1
                     radius: 8.0
-                    samples: 16
+                    samples: 12
                     cached: true
                     color: Qt.rgba(0, 0, 0, 1)
                 }

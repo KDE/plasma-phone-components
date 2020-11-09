@@ -34,24 +34,25 @@ LauncherContainer {
     flow.flow: Flow.TopToBottom
     favoriteStrip: root
 
-    visible: flow.children.length > 0 || launcherDragManager.active
+//     visible: flow.children.length > 0 || launcherDragManager.active
 
-    opacity: launcherDragManager.active && plasmoid.nativeInterface.applicationListModel.favoriteCount >= plasmoid.nativeInterface.applicationListModel.maxFavoriteCount ? 0.3 : 1
+//     opacity: launcherDragManager.active && plasmoid.nativeInterface.applicationListModel.favoriteCount >= plasmoid.nativeInterface.applicationListModel.maxFavoriteCount ? 0.3 : 1
 
     height: visible ? launcherGrid.cellHeight : 0
 
-    frame.implicitWidth: launcherGrid.cellWidth * Math.max(1, flow.children.length) + frame.leftPadding + frame.rightPadding
-
+//     frame.implicitWidth: launcherGrid.cellWidth * Math.max(1, flow.children.length) + frame.leftPadding + frame.rightPadding
+    frame.implicitWidth: parent.width
+    
     Behavior on height {
         NumberAnimation {
             duration: units.longDuration
             easing.type: Easing.InOutQuad
         }
     }
-    Behavior on opacity {
-        OpacityAnimator {
-            duration: units.longDuration * 4
-            easing.type: Easing.InOutQuad
-        }
-    }
+    //Behavior on opacity {
+        //OpacityAnimator {
+            //duration: units.longDuration * 4
+            //easing.type: Easing.InOutQuad
+        //}
+    //}
 }
