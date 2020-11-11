@@ -95,16 +95,16 @@ void PhonePanel::executeCommand(const QString &command)
 
 void PhonePanel::toggleTorch()
 {
-  int fd = open(FLASH_SYSFS_PATH, O_WRONLY);
+    int fd = open(FLASH_SYSFS_PATH, O_WRONLY);
 
-  if (fd < 0) {
-    qWarning() << "Unable to open file %s" << FLASH_SYSFS_PATH;
-    return;
-  }
+    if (fd < 0) {
+        qWarning() << "Unable to open file %s" << FLASH_SYSFS_PATH;
+        return;
+    }
 
-  write(fd, m_running ? "0" : "1", 1);
-  close(fd);
-  m_running = !m_running;
+    write(fd, m_running ? "0" : "1", 1);
+    close(fd);
+    m_running = !m_running;
 }
 
 bool PhonePanel::autoRotate()
