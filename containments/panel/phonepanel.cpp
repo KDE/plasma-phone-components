@@ -37,7 +37,7 @@
 constexpr int SCREENSHOT_DELAY = 200;
 
 /* -- Static Helpers --------------------------------------------------------------------------- */
-const char[] FLASH_SYSFS_PATH = "/sys/devices/platform/led-controller/leds/white:flash/brightness";
+
 static int readData(int theFile, QByteArray &theDataOut)
 {
     // implementation based on QtWayland file qwaylanddataoffer.cpp
@@ -95,6 +95,7 @@ void PhonePanel::executeCommand(const QString &command)
 
 void PhonePanel::toggleTorch()
 {
+    static auto FLASH_SYSFS_PATH = "/sys/devices/platform/led-controller/leds/white:flash/brightness";
     int fd = open(FLASH_SYSFS_PATH, O_WRONLY);
 
     if (fd < 0) {
