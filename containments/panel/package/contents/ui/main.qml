@@ -74,7 +74,7 @@ Item {
 
         var fullContainer = null;
         if (applet.pluginName == "org.kde.plasma.notifications") {
-            fullContainer = fullNotificationsContainerComponent.createObject(fullRepresentationView.contentItem, {"fullRepresentationModel": fullRepresentationModel, "fullRepresentationView": fullRepresentationView});
+            fullContainer = fullNotificationsContainerComponent.createObject(shadeOverlay.notificationView.contentItem, {"fullRepresentationModel": fullRepresentationModel, "fullRepresentationView": shadeOverlay.notificationView});
         } else {
             fullContainer = fullContainerComponent.createObject(fullRepresentationView.contentItem, {"fullRepresentationModel": fullRepresentationModel, "fullRepresentationView": fullRepresentationView});
         }
@@ -152,7 +152,7 @@ Item {
     }
 
     DropShadow {
-        anchors.fill: icons
+        anchors.fill: topPanel
         visible: !showingApp
         cached: true
         horizontalOffset: 0
@@ -163,239 +163,39 @@ Item {
         source: icons
     }
 
-    // screen top panel
-    PlasmaCore.ColorScope {
-        id: icons
-        z: 1
-        colorGroup: showingApp ? PlasmaCore.Theme.NormalColorGroup : PlasmaCore.Theme.ComplementaryColorGroup
-        //parent: slidingPanel.visible && !slidingPanel.wideScreen ? panelContents : root
-        anchors {
-            left: parent.left
-            right: parent.right
-            bottom: parent.bottom
-        }
-        height: root.height
-        Rectangle {
-            anchors.fill: parent
-            gradient: Gradient {
-                GradientStop {
-                    position: 1.0
-                    color: showingApp ? root.backgroundColor : "transparent"
-                }
-                GradientStop {
-                    position: 0.0
-                    color: showingApp ? root.backgroundColor : Qt.rgba(0, 0, 0, 0.1)
-                }
-            }
-        }
-
-        Loader {
-            id: strengthLoader
-            height: parent.height
-            width: item ? item.width : 0
-            source: Qt.resolvedUrl("indicators/SignalStrength.qml")
-        }
-
-        Row {
-            id: sniRow
-            anchors.left: strengthLoader.right
-            height: parent.height
-            Repeater {
-                id: statusNotifierRepeater
-                model: PlasmaCore.SortFilterModel {
-                    id: filteredStatusNotifiers
-                    filterRole: "Title"
-                    sourceModel: PlasmaCore.DataModel {
-                        dataSource: statusNotifierSource
-                    }
-                }
-
-                delegate: TaskWidget {
-                }
-            }
-        }
-
-        PlasmaComponents.Label {
-            id: clock
-            property bool is24HourTime: Qt.locale().timeFormat(Locale.ShortFormat).toLowerCase().indexOf("ap") === -1
-            
-            anchors.fill: parent
-            text: Qt.formatTime(timeSource.data.Local.DateTime, is24HourTime ? "h:mm" : "h:mm ap")
-            color: PlasmaCore.ColorScope.textColor
-            horizontalAlignment: Qt.AlignHCenter
-            verticalAlignment: Qt.AlignVCenter
-            font.pixelSize: height / 2
-        }
-
-        RowLayout {
-            id: appletIconsRow
-            anchors {
-                bottom: parent.bottom
-                right: simpleIndicatorsLayout.left
-            }
-            height: parent.height
-        }
-
-        //TODO: pluggable
-        RowLayout {
-            id: simpleIndicatorsLayout
-            anchors {
-                top: parent.top
-                bottom: parent.bottom
-                right: parent.right
-                rightMargin: units.smallSpacing
-            }
-            Indicators.Bluetooth {}
-            Indicators.Wifi {}
-            Indicators.Volume {}
-            Indicators.Battery {}
-        }
+    TopPanel {
+        id: topPanel
     }
     
     // screen top panel background (background for the rest of the screen in SlidingPanel.qml)
     Rectangle {
         anchors.fill: parent
         color: "black"
-        opacity: 0.6 * Math.min(1, slidingPanel.offset/panelContents.height)
+        opacity: shadeOverlay.stateGradient > 1 ? 0.6 : 0.6 * shadeOverlay.stateGradient
     }
     
+    // track initial gesture from top
     MouseArea {
         z: 99
         property int oldMouseY: 0
 
         anchors.fill: parent
         onPressed: {
-            slidingPanel.drawerX = Math.min(Math.max(0, mouse.x - slidingPanel.drawerWidth/2), slidingPanel.width - slidingPanel.drawerWidth)
-            slidingPanel.userInteracting = true;
             oldMouseY = mouse.y;
-            slidingPanel.offset = 0//units.gridUnit * 2;
+            slidingPanel.stateGradient = 0;
             slidingPanel.showFullScreen();
         }
         onPositionChanged: {
-            slidingPanel.offset = Math.min(slidingPanel.contentItem.height, slidingPanel.offset + (mouse.y - oldMouseY));
-            
+            slidingPanel.direction = oldMouseY > mouse.y ? NotificationShadeOverlay.MovementDirection.Up : NotificationShadeOverlay.MovementDirection.Down
+            slidingPanel.stateGradient = Math.max(0, Math.min(1, slidingPanel.stateGradient + (mouse.y - oldMouseY) / shadeOverlay.pinnedPanelHeight));
             oldMouseY = mouse.y;
         }
-        onReleased: {
-            slidingPanel.userInteracting = false;
-            slidingPanel.updateState();
-        }
+        onReleased: slidingPanel.updateState()
     }
 
-    SlidingPanel {
-        id: slidingPanel
-        width: plasmoid.availableScreenRect.width
-        height: plasmoid.availableScreenRect.height
-        openThreshold: units.gridUnit * 2
+    // quicksettings, notifications list, etc.
+    NotificationShadeOverlay {
+        id: shadeOverlay
         headerHeight: root.height
-
-        offset: quickSettingsParent.height
-        
-        onClosed: quickSettings.closed()
-
-        contentItem: Item {
-            implicitWidth: quickSettingsParent.implicitWidth
-            implicitHeight: Math.min(slidingPanel.height, quickSettingsParent.implicitHeight)
-            GridLayout {
-                id: panelContents
-                anchors.fill: parent
-                implicitWidth: quickSettingsParent.implicitWidth
-                implicitHeight: Math.min(slidingPanel.height, quickSettingsParent.implicitHeight)
-
-                columns: slidingPanel.wideScreen ? 2 : 1
-                rows: slidingPanel.wideScreen ? 1 : 2
-                
-                DrawerBackground {
-                    id: quickSettingsParent
-                    //anchors.fill: parent
-                    Layout.alignment: Qt.AlignTop
-                    Layout.preferredWidth: slidingPanel.wideScreen ? Math.min(slidingPanel.width/2, units.gridUnit * 25) : panelContents.width
-                    z: 4
-                    contentItem: QuickSettings {
-                        id: quickSettings
-                        onCloseRequested: {
-                            slidingPanel.hide()
-                        }
-                    }
-                }
-
-                ListView {
-                    id: fullRepresentationView
-                    z: 1
-                    interactive: width < contentWidth
-                    //parent: slidingPanel.wideScreen ? slidingPanel.flickable.contentItem : panelContents
-                    Layout.preferredWidth: slidingPanel.wideScreen ? Math.min(slidingPanel.width/2, quickSettingsParent.width*fullRepresentationModel.count) : panelContents.width 
-                    //Layout.fillWidth: true
-                    clip: slidingPanel.wideScreen
-                    y: slidingPanel.wideScreen ? 0 : quickSettingsParent.height - height * (1-opacity)
-                    opacity: slidingPanel.wideScreen ? 1 : fullRepresentationModel.count > 0 && slidingPanel.offset/panelContents.height
-                    height: Math.min(plasmoid.screenGeometry.height - slidingPanel.headerHeight - quickSettingsParent.height - bottomBar.height, implicitHeight)
-                    //leftMargin: slidingPanel.drawerX
-                    preferredHighlightBegin: slidingPanel.drawerX
-                    
-                    implicitHeight: units.gridUnit * 20
-                    cacheBuffer: width * 100
-                    highlightFollowsCurrentItem: true
-                    highlightRangeMode: ListView.StrictlyEnforceRange
-                    highlightMoveDuration: units.longDuration
-                    snapMode: slidingPanel.wideScreen ? ListView.NoSnap : ListView.SnapOneItem
-                    model: ObjectModel {
-                        id: fullRepresentationModel
-                    }
-                    orientation: ListView.Horizontal
-
-                    MouseArea {
-                        parent: fullRepresentationView.contentItem
-                        anchors.fill: parent
-                        z: -1
-                        onClicked: slidingPanel.close()
-                    }
-
-                    //implicitHeight: fullRepresentationLayout.implicitHeight
-                    //clip: true
-
-                }
-            }
-        }
-        DrawerBackground {
-            id: bottomBar
-            anchors {
-                left: parent.left
-                right: parent.right
-                bottom: parent.bottom
-            }
-
-            parent: slidingPanel.fixedArea
-            opacity: fullRepresentationView.opacity
-            visible: !slidingPanel.wideScreen && fullRepresentationModel.count > 1
-            //height: 40
-            z: 100
-            contentItem: RowLayout {
-                PlasmaComponents.TabBar {
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    position: PlasmaComponents.TabBar.Footer
-                    Text {
-                        text:fullRepresentationModel.count
-                    }
-                    Repeater {
-                        model: fullRepresentationView.count
-                        delegate: PlasmaComponents.TabButton {
-                            implicitHeight: parent.height
-                            text: fullRepresentationModel.get(index).applet.title
-                            checked: fullRepresentationView.currentIndex === index
-                        
-                            onClicked: fullRepresentationView.currentIndex = index
-                        }
-                    }
-                }
-                PlasmaComponents.ToolButton {
-                    Layout.fillHeight: true
-                    Layout.preferredWidth: height
-                    icon.name: "paint-none"
-                    onClicked: slidingPanel.close();
-                }
-            }
-        }
     }
 }

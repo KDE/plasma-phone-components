@@ -36,10 +36,14 @@ ColumnLayout {
     required property bool enabled
     required property string settingsCommand
     required property var toggleFunction
-
+    
+    required property double textVisibility // 0 - 1
+    required property int size
+    width: size + Kirigami.Units.smallSpacing * 2
+    
     Rectangle {
-        Layout.preferredWidth: units.iconSizes.large + units.smallSpacing
-        Layout.minimumHeight: width
+        Layout.preferredWidth: size
+        Layout.minimumHeight: size
         Layout.alignment: Qt.AlignHCenter
         radius: units.smallSpacing
         border.color: delegateRoot.enabled ?
@@ -105,6 +109,8 @@ ColumnLayout {
     PlasmaComponents.Label {
         id: label
 
+        opacity: textVisibility
+        visible: textVisibility != 0
         Layout.maximumWidth: parent.width
         Layout.alignment: Qt.AlignHCenter
 

@@ -42,9 +42,6 @@ NanoShell.FullScreenOverlay {
 
     signal closed
 
-    //width: Screen.width
-    //height: Screen.height
-
     enum MovementDirection {
         None = 0,
         Up,

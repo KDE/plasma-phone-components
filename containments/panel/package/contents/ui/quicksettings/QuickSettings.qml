@@ -34,6 +34,8 @@ Item {
     signal closeRequested
     signal closed
 
+    property alias model: settingsModel
+    
     property bool screenshotRequested: false
 
     PlasmaNM.Handler {
@@ -260,48 +262,5 @@ Item {
 
     ListModel {
         id: settingsModel
-    }
-
-    Flow {
-        id: flow
-        anchors {
-            fill: parent
-            margins: units.smallSpacing
-        }
-        readonly property real cellSizeHint: units.iconSizes.large + units.smallSpacing * 6
-        readonly property real columnWidth: Math.floor(width / Math.floor(width / cellSizeHint))
-        spacing: 0
-        Repeater {
-            model: settingsModel
-            delegate: Delegate {
-                id: delegateItem
-
-                //FIXME: why this is needed?
-                width: flow.columnWidth
-                height: item ? item.implicitHeight : 0
-
-                Connections {
-                    target: delegateItem
-                    onCloseRequested: root.closeRequested();
-                }
-                Connections {
-                    target: root
-                    onClosed: delegateItem.panelClosed();
-                }
-            }
-        }
-
-        BrightnessItem {
-            id: brightnessSlider
-            width: flow.width
-            icon: "video-display-brightness"
-            label: i18n("Display Brightness")
-            value: root.screenBrightness
-            maximumValue: root.maximumScreenBrightness
-            Connections {
-                target: root
-                onScreenBrightnessChanged: brightnessSlider.value = root.screenBrightness
-            }
-        }
     }
 }
