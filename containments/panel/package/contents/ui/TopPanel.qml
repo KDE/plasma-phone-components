@@ -33,9 +33,6 @@ import org.kde.taskmanager 0.1 as TaskManager
 import org.kde.plasma.private.nanoshell 2.0 as NanoShell
 import org.kde.plasma.private.mobileshell 1.0 as MobileShell
 
-import "LayoutManager.js" as LayoutManager
-
-import "quicksettings"
 import "indicators" as Indicators
 
 // screen top panel
@@ -54,11 +51,11 @@ PlasmaCore.ColorScope {
         gradient: Gradient {
             GradientStop {
                 position: 1.0
-                color: showingApp ? root.backgroundColor : "transparent"
+                color: root.showingApp ? root.backgroundColor : "transparent"
             }
             GradientStop {
                 position: 0.0
-                color: showingApp ? root.backgroundColor : Qt.rgba(0, 0, 0, 0.1)
+                color: root.showingApp ? root.backgroundColor : Qt.rgba(0, 0, 0, 0.1)
             }
         }
     }
@@ -94,7 +91,7 @@ PlasmaCore.ColorScope {
         property bool is24HourTime: Qt.locale().timeFormat(Locale.ShortFormat).toLowerCase().indexOf("ap") === -1
         
         anchors.fill: parent
-        text: Qt.formatTime(timeSource.data.Local.DateTime, is24HourTime ? "h:mm" : "h:mm ap")
+        text: Qt.formatTime(root.timeSource.data.Local.DateTime, is24HourTime ? "h:mm" : "h:mm ap")
         color: PlasmaCore.ColorScope.textColor
         horizontalAlignment: Qt.AlignHCenter
         verticalAlignment: Qt.AlignVCenter

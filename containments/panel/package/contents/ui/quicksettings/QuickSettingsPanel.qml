@@ -42,38 +42,30 @@ Control {
     // TODO cap the number of rows
     
     implicitWidth: parent.implicitWidth
-    implicitHeight: {
-        let baseHeight = quickSettingSize + Kirigami.Units.smallSpacing * 2;
+    height: {
+        let baseHeight = quickSettingSize + Kirigami.Units.largeSpacing * 2;
         if (stateGradient <= 1) {
             return baseHeight;
         } else {
-            return baseHeight + (panelContent.height - baseHeight) * (stateGradient - 1);
+            return baseHeight + (quickSettingSize * 8 - baseHeight) * (stateGradient - 1);
         }
     }
+    implicitHeight: height
+    clip: true
     
     leftPadding: Kirigami.Units.largeSpacing
     topPadding: Kirigami.Units.largeSpacing
     rightPadding: Kirigami.Units.largeSpacing
+    bottomPadding: Kirigami.Unints.largeSpacing
 
     // panel background
     background: Rectangle {
         id: container
-        color: Kirigami.ColorUtils.adjustColor(PlasmaCore.ColorScope.backgroundColor, {"alpha": 0.85*255})
-        anchors {
-            fill: parent
-            leftMargin: PlasmaCore.Units.smallSpacing
-            rightMargin: PlasmaCore.Units.smallSpacing
-            topMargin: PlasmaCore.Units.smallSpacing
-            bottomMargin: PlasmaCore.Units.smallSpacing
-        }
+        color: Kirigami.ColorUtils.adjustColor(PlasmaCore.Theme.backgroundColor, {"alpha": 0.9*255})
+        anchors.fill: parent
+        anchors.leftMargin: Kirigami.Units.largeSpacing
+        anchors.rightMargin: Kirigami.Units.largeSpacing
         radius: PlasmaCore.Units.smallSpacing
-        
-        layer.enabled: true
-        layer.effect: DropShadow {
-            radius: 5
-            samples: 6
-            verticalOffset: 1
-        }
     }
     
     QuickSettings {
@@ -86,8 +78,10 @@ Control {
     // actual panel contents
     contentItem: ColumnLayout {
         id: panelContent
-        anchors.fill: parent
-        anchors.margins: PlasmaCore.units.smallSpacing
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.top: parent.top
+        anchors.margins: Kirigami.Units.largeSpacing
         property int iconSpacing: {
             if (quickSettingsPanel.stateGradient <= 1) {
                 return (panelContent.width - quickSettingsPanel.quickSettingSize * quickSettingsPanel.pinnedColumns) / quickSettingsPanel.pinnedColumns;
@@ -106,16 +100,17 @@ Control {
                 delegate: QuickSettingsDelegate {
                     id: delegateItem
                     size: quickSettingsPanel.quickSettingSize
-                    visible: index < quickSettingsPanel.pinnedColumns // ignore elements after
-                    opacity: index >= quickSettingsPanel.columns ? (1 - (quickSettingsPanel.stateGradient - 1)) : 1
+                    // TODO FIGURE OUT WHY VIEWINDEX DOESNT WORK
+                    visible: viewIndex < quickSettingsPanel.pinnedColumns // ignore elements after
+                    opacity: viewIndex >= quickSettingsPanel.columns ? (1 - (quickSettingsPanel.stateGradient - 1)) : 1
                     textVisibility: quickSettingsPanel.allSettingsOpacity
                     
                     Connections {
                         target: delegateItem
-                        onCloseRequested: root.closeRequested();
+                        onCloseRequested: quickSettings.closeRequested();
                     }
                     Connections {
-                        target: root
+                        target: quickSettings
                         onClosed: delegateItem.panelClosed();
                     }
                 }
@@ -124,28 +119,28 @@ Control {
         
         // rest of the delegates
         GridLayout {
+            Layout.fillWidth: true
             columnSpacing: iconSpacing
             rowSpacing: iconSpacing
-            
             columns: quickSettingsPanel.columns
+            opacity: quickSettingsPanel.allSettingsOpacity
             
             Repeater {
                 visible: quickSettingsPanel.stateGradient > 1
-                opacity: quickSettingsPanel.allSettingsOpacity
                 
                 model: quickSettings.model
                 delegate: QuickSettingsDelegate {
                     id: delegateItem
                     size: quickSettingsPanel.quickSettingSize
-                    visible: index >= columns // ignore first row (already rendered above)
+                    visible: model.viewIndex >= quickSettingsPanel.columns // ignore first row (already rendered above)
                     textVisibility: quickSettingsPanel.allSettingsOpacity
 
                     Connections {
                         target: delegateItem
-                        onCloseRequested: root.closeRequested();
+                        onCloseRequested: quickSettings.closeRequested();
                     }
                     Connections {
-                        target: root
+                        target: quickSettings
                         onClosed: delegateItem.panelClosed();
                     }
                 }
@@ -157,14 +152,14 @@ Control {
             visible: stateGradient > 1
             opacity: quickSettingsPanel.allSettingsOpacity
             id: brightnessSlider
-            width: panelContent.width
+            width: quickSettingsPanel.width
             icon: "video-display-brightness"
             label: i18n("Display Brightness")
-            value: root.screenBrightness
-            maximumValue: root.maximumScreenBrightness
+            value: quickSettings.screenBrightness
+            maximumValue: quickSettings.maximumScreenBrightness
             Connections {
-                target: root
-                onScreenBrightnessChanged: brightnessSlider.value = root.screenBrightness
+                target: quickSettings
+                onScreenBrightnessChanged: brightnessSlider.value = quickSettings.screenBrightness
             }
         }
     }

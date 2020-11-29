@@ -22,6 +22,7 @@
 import QtQuick 2.0
 import QtQuick.Layouts 1.1
 import QtQml.Models 2.12
+import QtGraphicalEffects 1.15
 import QtQuick.Window 2.2
 import org.kde.plasma.core 2.0 as PlasmaCore
 import org.kde.plasma.components 3.0 as PlasmaComponents
@@ -35,25 +36,30 @@ ColumnLayout {
     // 0 - closed, 1 - pinned settings visible, 2 - all settings visible
     property double stateGradient
     
-    // TODO
-    property int pinnedPanelHeight: units.iconSizes.large + units.smallSpacing * 3
-    property int fullPanelHeight: 4 * (units.iconSizes.large + units.smallSpacing) + units.smallSpacing * 2
-    
     property alias notificationView: fullRepresentationView
     
-    spacing: Kirigami.Units.smallSpacing
+    spacing: 0
     
     // top quicksettings panel
     QuickSettingsPanel {
         id: quickSettingsPanel
-        y: stateGradient >= 1 ? 0 : stateGradient * (-height - Kirigami.Units.gridUnit)
+        y: stateGradient >= 1 ? 0 : (-height - Kirigami.Units.gridUnit) + stateGradient * (height + Kirigami.Units.gridUnit)
         stateGradient: notifShadeContent.stateGradient
+    }
+    
+    // TODO doesn't seem to display
+    DropShadow {
+        source: quickSettingsPanel
+        color: Qt.darker(PlasmaCore.Theme.backgroundColor, 1.2)
+        radius: 4
+        samples: 6
+        horizontalOffset: 0
+        verticalOffset: 1
     }
     
     // notifications list
     ListView {
         id: fullRepresentationView
-        z: 1
         opacity: stateGradient > 1 ? 1 : stateGradient
         
         Layout.preferredWidth: parent.width
@@ -75,6 +81,27 @@ ColumnLayout {
             anchors.fill: parent
             z: -1
             onClicked: window.close()
+        }
+    }
+    
+    // track swiping
+    MouseArea {
+        z: 1
+        property int oldMouseY: 0
+        anchors.fill: parent
+            
+        propagateComposedEvents: true
+        onPressed: {
+            shadeOverlay.cancelAnimations();
+            oldMouseY = mouse.y;
+        }
+        onReleased: {
+            window.updateState();
+        }
+        onPositionChanged: {
+            window.direction = oldMouseY > mouse.y ? NotificationShadeOverlay.MovementDirection.Up : NotificationShadeOverlay.MovementDirection.Down;
+            window.offset += mouse.y - oldMouseY;
+            oldMouseY = mouse.y;
         }
     }
 }

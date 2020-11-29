@@ -29,15 +29,29 @@ import org.kde.plasma.private.nanoshell 2.0 as NanoShell
 NanoShell.FullScreenOverlay {
     id: window
 
-    property double stateGradient: 0 // 0 - closed, 1 - pinned settings visible, 2 - all settings visible
+    property int offset: 0
+    property double stateGradient: {
+        if (offset > pinnedPanelHeight) {
+            return Math.min(2, 1 + (offset - pinnedPanelHeight) / (fullPanelHeight - pinnedPanelHeight));
+        } else {
+            return Math.max(0, offset / pinnedPanelHeight);
+        }
+    } // 0 - closed, 1 - pinned settings visible, 2 - all settings visible
     
     readonly property bool wideScreen: width > height || width > units.gridUnit * 45
-    readonly property int drawerWidth: wideScreen ? contentItem.implicitWidth : width
+    readonly property int drawerWidth: width
+    
+    property alias closeAnimation: closeAnim
 
-    property alias notificationView: contentArea.contentItem.notificationView
-    property alias pinnedPanelHeight: contentArea.contentItem.pinnedPanelHeight
-    property alias fullPanelHeight: contentArea.contentItem.fullPanelHeight
+    //TODO CAUSES SEGFAULT property alias notificationView: contentArea.contentItem.notificationView
+    
+    // TODO calculate, not hardcode
+    property int pinnedPanelHeight: units.iconSizes.large + units.smallSpacing * 5
+    property int fullPanelHeight: 4 * (units.iconSizes.large + units.smallSpacing) + units.smallSpacing * 2
+    
     property int headerHeight
+    
+    color: "transparent"
 
     signal closed
 
@@ -59,6 +73,11 @@ NanoShell.FullScreenOverlay {
         window.showFullScreen();
         openAnim.restart();
     }
+    function cancelAnimations() {
+        closeAnim.stop();
+        toPinnedAnim.stop();
+        toFullOpenAnim.stop();
+    }
     function close() {
         closeAnim.restart();
     }
@@ -73,7 +92,11 @@ NanoShell.FullScreenOverlay {
                 toFullOpenAnim.restart();
             }
         } else if (window.direction === NotificationShadeOverlay.MovementDirection.Up) {
-            closeAnim.restart();
+            if (stateGradient <= 1) {
+                closeAnim.restart();
+            } else {
+                toPinnedAnim.restart();
+            }
         }
     }
     Component.onCompleted: updateState()
@@ -90,8 +113,8 @@ NanoShell.FullScreenOverlay {
             target: window
             duration: units.longDuration
             easing.type: Easing.InOutQuad
-            properties: "stateGradient"
-            from: window.stateGradient
+            properties: "offset"
+            from: window.offset
             to: 0
         }
         ScriptAction {
@@ -106,18 +129,18 @@ NanoShell.FullScreenOverlay {
         target: window
         duration: units.longDuration
         easing.type: Easing.InOutQuad
-        properties: "stateGradient"
-        from: window.stateGradient
-        to: 1
+        properties: "offset"
+        from: window.offset
+        to: window.pinnedPanelHeight
     }
     PropertyAnimation {
         id: toFullOpenAnim
         target: window
         duration: units.longDuration
         easing.type: Easing.InOutQuad
-        properties: "stateGradient"
-        from: window.stateGradient
-        to: 2
+        properties: "offset"
+        from: window.offset
+        to: window.fullPanelHeight
     }
 
     // background rectangle
@@ -128,30 +151,34 @@ NanoShell.FullScreenOverlay {
             bottom: parent.bottom
         }
         height: parent.height - headerHeight // don't layer on top panel indicators (area is darkened separately)
-        color: "black"
-        opacity: window.stateGradient > 1 ? 0.6 : 0.6 * window.gradient
+        color: PlasmaCore.Theme.backgroundColor
+        opacity: window.stateGradient > 1 ? 0.6 : 0.6 * window.stateGradient
     }
     
     // notification shade panel
     PlasmaCore.ColorScope {
         id: mainScope
         anchors.fill: parent
+        anchors.topMargin: window.headerHeight
         
         // shade overlay content
         MouseArea {
             id: dismissArea
             z: 2
             width: parent.width
-            height: mainFlickable.contentHeight
+            height: parent.height
             onClicked: window.close();
             
             property int oldMouseY: 0
             
-            onPressed: oldMouseY = mouse.y
-            onReleased: slidingPanel.updateState()
+            onPressed: {
+                cancelAnimations();
+                oldMouseY = mouse.y;
+            }
+            onReleased: window.updateState()
             onPositionChanged: {
-                slidingPanel.direction = oldMouseY > mouse.y ? NotificationShadeOverlay.MovementDirection.Up : NotificationShadeOverlay.MovementDirection.Down;
-                slidingPanel.stateGradient = Math.max(0, Math.min(2, slidingPanel.stateGradient + (mouse.y - oldMouseY) / shadeOverlay.pinnedPanelHeight));
+                window.direction = oldMouseY > mouse.y ? NotificationShadeOverlay.MovementDirection.Up : NotificationShadeOverlay.MovementDirection.Down;
+                window.offset += mouse.y - oldMouseY;
                 oldMouseY = mouse.y;
             }
             
@@ -160,6 +187,7 @@ NanoShell.FullScreenOverlay {
                 z: 1
                 y: 0
                 width: drawerWidth
+                implicitWidth: drawerWidth
                 contentItem: NotificationShadeContent {
                     width: parent
                     stateGradient: window.stateGradient

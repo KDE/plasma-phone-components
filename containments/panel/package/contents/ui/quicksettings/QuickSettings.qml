@@ -171,7 +171,8 @@ Item {
             "enabled": false,
             "settingsCommand": "plasma-settings",
             "toggleFunction": "",
-            "applet": null
+            "applet": null,
+            "viewIndex": 0
         });
         settingsModel.append({
             "text": i18n("Wifi"),
@@ -179,7 +180,8 @@ Item {
             "settingsCommand": "plasma-settings -m kcm_mobile_wifi",
             "toggleFunction": "toggleWifi",
             "enabled": enabledConnections.wirelessEnabled,
-            "applet": null
+            "applet": null,
+            "viewIndex": 1
         });
         settingsModel.append({
             "text": i18n("Bluetooth"),
@@ -188,7 +190,8 @@ Item {
             "toggleFunction": "toggleBluetooth",
             "delegate": "",
             "enabled": BluezQt.Manager.bluetoothOperational,
-            "applet": null
+            "applet": null,
+            "viewIndex": 2
         });
         settingsModel.append({
             "text": i18n("Mobile Data"),
@@ -196,7 +199,8 @@ Item {
             "settingsCommand": "plasma-settings -m kcm_mobile_broadband",
             "toggleFunction": "toggleWwan",
             "enabled": enabledConnections.wwanEnabled,
-            "applet": null
+            "applet": null,
+            "viewIndex": 3
         });
         settingsModel.append({
             "text": i18n("Battery"),
@@ -204,7 +208,8 @@ Item {
             "enabled": false,
             "settingsCommand": "plasma-settings -m kcm_mobile_power",
             "toggleFunction": "",
-            "applet": null
+            "applet": null,
+            "viewIndex": 4
         });
         settingsModel.append({
             "text": i18n("Sound"),
@@ -212,7 +217,8 @@ Item {
             "enabled": false,
             "settingsCommand": "plasma-settings -m kcm_pulseaudio",
             "toggleFunction": "",
-            "applet": null
+            "applet": null,
+            "viewIndex": 5
         });
         settingsModel.append({
             "text": i18n("Flashlight"),
@@ -220,14 +226,16 @@ Item {
             "enabled": plasmoid.nativeInterface.torchEnabled,
             "settingsCommand": "",
             "toggleFunction": "toggleTorch",
-            "applet": null
+            "applet": null,
+            "viewIndex": 6
         });
         settingsModel.append({
             "text": i18n("Location"),
             "icon": "gps",
             "enabled": false,
             "settingsCommand": "",
-            "applet": null
+            "applet": null,
+            "viewIndex": 7
         });
         settingsModel.append({
             "text": i18n("Screenshot"),
@@ -235,7 +243,8 @@ Item {
             "enabled": false,
             "settingsCommand": "",
             "toggleFunction": "requestScreenshot",
-            "applet": null
+            "applet": null,
+            "viewIndex": 8
         });
         settingsModel.append({
             "text": i18n("Auto-rotate"),
@@ -243,7 +252,8 @@ Item {
             "enabled": plasmoid.nativeInterface.autoRotateEnabled,
             "settingsCommand": "",
             "toggleFunction": "toggleRotation",
-            "applet": null
+            "applet": null,
+            "viewIndex": 9
         });
         settingsModel.append({
             "text": i18n("Night Color"),
@@ -251,7 +261,8 @@ Item {
             "enabled": compositorAdaptor.active,
             "settingsCommand": "", // change once night color kcm is added
             "toggleFunction": "toggleNightColor",
-            "applet": null
+            "applet": null,
+            "viewIndex": 10
         });
 
         brightnessSlider.moved.connect(function() {

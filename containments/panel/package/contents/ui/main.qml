@@ -49,15 +49,16 @@ Item {
     property bool reorderingApps: false
     property var layoutManager: LayoutManager
 
-    readonly property color backgroundColor: NanoShell.StartupFeedback.visible ? NanoShell.StartupFeedback.backgroundColor : icons.backgroundColor
+    readonly property color backgroundColor: NanoShell.StartupFeedback.visible ? NanoShell.StartupFeedback.backgroundColor : topPanel.backgroundColor
     readonly property bool showingApp: !MobileShell.HomeScreenControls.homeScreenVisible
 
     readonly property bool hasTasks: tasksModel.count > 0
 
-    Containment.onAppletAdded: {
-        addApplet(applet, x, y);
-        LayoutManager.save();
-    }
+    // TODO CAUSES SEGFAULTS
+//     Containment.onAppletAdded: {
+//         addApplet(applet, x, y);
+//         LayoutManager.save();
+//     }
 
     function addApplet(applet, x, y) {
         var compactContainer = compactContainerComponent.createObject(appletIconsRow)
@@ -76,13 +77,12 @@ Item {
         if (applet.pluginName == "org.kde.plasma.notifications") {
             fullContainer = fullNotificationsContainerComponent.createObject(shadeOverlay.notificationView.contentItem, {"fullRepresentationModel": fullRepresentationModel, "fullRepresentationView": shadeOverlay.notificationView});
         } else {
-            fullContainer = fullContainerComponent.createObject(fullRepresentationView.contentItem, {"fullRepresentationModel": fullRepresentationModel, "fullRepresentationView": fullRepresentationView});
+            fullContainer = fullContainerComponent.createObject(shadeOverlay.notificationView.contentItem, {"fullRepresentationModel": fullRepresentationModel, "fullRepresentationView": shadeOverlay.notificationView});
         }
 
         applet.fullRepresentationItem.parent = fullContainer;
         fullContainer.applet = applet;
         fullContainer.contentItem = applet.fullRepresentationItem;
-        //applet.fullRepresentationItem.anchors.fill = fullContainer;
     }
 
     Component.onCompleted: {
@@ -151,6 +151,17 @@ Item {
         interval: 60 * 1000
     }
 
+    TopPanel {
+        id: topPanel
+    }
+    
+    // screen top panel background
+    Rectangle {
+        anchors.fill: parent
+        color: PlasmaCore.Theme.backgroundColor
+        opacity: shadeOverlay.stateGradient > 1 ? 0.6 : 0.6 * shadeOverlay.stateGradient
+    }
+    
     DropShadow {
         anchors.fill: topPanel
         visible: !showingApp
@@ -158,20 +169,9 @@ Item {
         horizontalOffset: 0
         verticalOffset: 1
         radius: 4.0
-        samples: 17
+        samples: 7
         color: Qt.rgba(0,0,0,0.8)
-        source: icons
-    }
-
-    TopPanel {
-        id: topPanel
-    }
-    
-    // screen top panel background (background for the rest of the screen in SlidingPanel.qml)
-    Rectangle {
-        anchors.fill: parent
-        color: "black"
-        opacity: shadeOverlay.stateGradient > 1 ? 0.6 : 0.6 * shadeOverlay.stateGradient
+        source: topPanel
     }
     
     // track initial gesture from top
@@ -181,21 +181,30 @@ Item {
 
         anchors.fill: parent
         onPressed: {
+            shadeOverlay.cancelAnimations();
             oldMouseY = mouse.y;
-            slidingPanel.stateGradient = 0;
-            slidingPanel.showFullScreen();
+            shadeOverlay.offset = 0;
+            shadeOverlay.showFullScreen();
         }
         onPositionChanged: {
-            slidingPanel.direction = oldMouseY > mouse.y ? NotificationShadeOverlay.MovementDirection.Up : NotificationShadeOverlay.MovementDirection.Down
-            slidingPanel.stateGradient = Math.max(0, Math.min(1, slidingPanel.stateGradient + (mouse.y - oldMouseY) / shadeOverlay.pinnedPanelHeight));
+            shadeOverlay.direction = oldMouseY > mouse.y ? NotificationShadeOverlay.MovementDirection.Up : NotificationShadeOverlay.MovementDirection.Down
+            
+            let diff = mouse.y - oldMouseY;
+            if (shadeOverlay.offset + diff > shadeOverlay.pinnedPanelHeight) {
+                shadeOverlay.offset = shadeOverlay.pinnedPanelHeight;
+            } else {
+                shadeOverlay.offset += diff;
+            }
             oldMouseY = mouse.y;
         }
-        onReleased: slidingPanel.updateState()
+        onReleased: shadeOverlay.updateState()
     }
 
     // quicksettings, notifications list, etc.
     NotificationShadeOverlay {
         id: shadeOverlay
         headerHeight: root.height
+        width: plasmoid.availableScreenRect.width
+        height: plasmoid.availableScreenRect.height
     }
 }
