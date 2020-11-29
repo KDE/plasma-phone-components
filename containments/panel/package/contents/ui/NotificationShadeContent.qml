@@ -21,6 +21,7 @@
 
 import QtQuick 2.0
 import QtQuick.Layouts 1.1
+import QtQml.Models 2.12
 import QtQuick.Window 2.2
 import org.kde.plasma.core 2.0 as PlasmaCore
 import org.kde.plasma.components 3.0 as PlasmaComponents
@@ -30,8 +31,15 @@ import "quicksettings"
 
 ColumnLayout {
     id: notifShadeContent
-    property required double stateGradient // 0 - closed, 1 - pinned settings visible, 2 - all settings visible
-    property alias var notificationView: fullRepresentationView
+    
+    // 0 - closed, 1 - pinned settings visible, 2 - all settings visible
+    property double stateGradient
+    
+    // TODO
+    property int pinnedPanelHeight: units.iconSizes.large + units.smallSpacing * 3
+    property int fullPanelHeight: 4 * (units.iconSizes.large + units.smallSpacing) + units.smallSpacing * 2
+    
+    property alias notificationView: fullRepresentationView
     
     spacing: Kirigami.Units.smallSpacing
     

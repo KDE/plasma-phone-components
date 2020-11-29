@@ -29,16 +29,12 @@ import org.kde.plasma.private.nanoshell 2.0 as NanoShell
 NanoShell.FullScreenOverlay {
     id: window
 
-    property property offset
-    
     property double stateGradient: 0 // 0 - closed, 1 - pinned settings visible, 2 - all settings visible
     
     readonly property bool wideScreen: width > height || width > units.gridUnit * 45
     readonly property int drawerWidth: wideScreen ? contentItem.implicitWidth : width
-    property alias fixedArea: mainScope
-    property alias flickable: mainFlickable
 
-    property alias var notificationView: contentArea.contentItem.notificationView
+    property alias notificationView: contentArea.contentItem.notificationView
     property alias pinnedPanelHeight: contentArea.contentItem.pinnedPanelHeight
     property alias fullPanelHeight: contentArea.contentItem.fullPanelHeight
     property int headerHeight

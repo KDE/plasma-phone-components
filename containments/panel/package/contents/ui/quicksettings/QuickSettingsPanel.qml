@@ -21,6 +21,8 @@
 import QtQuick 2.0
 import QtQuick.Layouts 1.1
 import QtQuick.Window 2.2
+import QtQuick.Controls 2.15
+import QtGraphicalEffects 1.15
 import org.kde.plasma.core 2.0 as PlasmaCore
 import org.kde.plasma.components 3.0 as PlasmaComponents
 import org.kde.plasma.private.nanoshell 2.0 as NanoShell
@@ -29,7 +31,8 @@ import org.kde.kirigami 2.11 as Kirigami
 Control {
     id: quickSettingsPanel
     
-    property required double stateGradient // 0 - closed, 1 - pinned settings visible, 2 - all settings visible
+    // 0 - closed, 1 - pinned settings visible, 2 - all settings visible
+    property double stateGradient
     
     property int quickSettingSize: units.iconSizes.large + units.smallSpacing
     property double allSettingsOpacity: stateGradient > 1 ? stateGradient - 1 : 0
