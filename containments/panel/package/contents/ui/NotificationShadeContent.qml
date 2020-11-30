@@ -31,6 +31,7 @@ import org.kde.kirigami 2.11 as Kirigami
 import "quicksettings"
 
 ColumnLayout {
+    anchors.fill: parent
     id: notifShadeContent
     
     // 0 - closed, 1 - pinned settings visible, 2 - all settings visible
@@ -47,8 +48,8 @@ ColumnLayout {
         stateGradient: notifShadeContent.stateGradient
     }
     
-    // TODO doesn't seem to display
     DropShadow {
+        anchors.fill: quickSettingsPanel
         source: quickSettingsPanel
         color: Qt.darker(PlasmaCore.Theme.backgroundColor, 1.2)
         radius: 4
@@ -63,7 +64,7 @@ ColumnLayout {
         opacity: stateGradient > 1 ? 1 : stateGradient
         
         Layout.preferredWidth: parent.width
-        height: Math.min(plasmoid.screenGeometry.height - quickSettingsPanel.height - bottomBar.height, implicitHeight)
+        height: Math.min(plasmoid.screenGeometry.height - quickSettingsPanel.height, implicitHeight)
         implicitHeight: units.gridUnit * 20
         
         cacheBuffer: width * 100
@@ -88,7 +89,7 @@ ColumnLayout {
     MouseArea {
         z: 1
         property int oldMouseY: 0
-        anchors.fill: parent
+        anchors.fill: notifShadeContent
             
         propagateComposedEvents: true
         onPressed: {

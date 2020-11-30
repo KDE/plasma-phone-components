@@ -46,8 +46,8 @@ NanoShell.FullScreenOverlay {
     //TODO CAUSES SEGFAULT property alias notificationView: contentArea.contentItem.notificationView
     
     // TODO calculate, not hardcode
-    property int pinnedPanelHeight: units.iconSizes.large + units.smallSpacing * 5
-    property int fullPanelHeight: 4 * (units.iconSizes.large + units.smallSpacing) + units.smallSpacing * 2
+    property int pinnedPanelHeight: 2 * (units.iconSizes.large + units.smallSpacing * 5)
+    property int fullPanelHeight: 4 * pinnedPanelHeight + units.smallSpacing * 2
     
     property int headerHeight
     
@@ -83,6 +83,7 @@ NanoShell.FullScreenOverlay {
     }
     // update state when nothing is open
     function updateState() {
+        console.log("Updating state - direction:" + window.direction + " stateGradient:" + stateGradient);
         if (window.direction === NotificationShadeOverlay.MovementDirection.None) {
             closeAnim.restart();
         } else if (window.direction === NotificationShadeOverlay.MovementDirection.Down) {
@@ -167,7 +168,7 @@ NanoShell.FullScreenOverlay {
             z: 2
             width: parent.width
             height: parent.height
-            onClicked: window.close();
+//             onClicked: window.close();
             
             property int oldMouseY: 0
             
@@ -189,7 +190,7 @@ NanoShell.FullScreenOverlay {
                 width: drawerWidth
                 implicitWidth: drawerWidth
                 contentItem: NotificationShadeContent {
-                    width: parent
+                    width: drawerWidth
                     stateGradient: window.stateGradient
                 }
             }

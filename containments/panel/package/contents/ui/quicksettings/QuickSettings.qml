@@ -28,9 +28,6 @@ import org.kde.colorcorrect 0.1 as CC
 Item {
     id: root
 
-    implicitWidth: flow.implicitWidth + units.smallSpacing * 6
-    implicitHeight: flow.implicitHeight + units.smallSpacing * 6
-
     signal closeRequested
     signal closed
 
@@ -109,7 +106,6 @@ Item {
     }
 
     signal plasmoidTriggered(var applet, var id)
-    Layout.minimumHeight: flow.implicitHeight + units.largeSpacing*2
 
     property int screenBrightness
     property bool disableBrightnessUpdate: true
@@ -171,8 +167,7 @@ Item {
             "enabled": false,
             "settingsCommand": "plasma-settings",
             "toggleFunction": "",
-            "applet": null,
-            "viewIndex": 0
+            "applet": null
         });
         settingsModel.append({
             "text": i18n("Wifi"),
@@ -180,8 +175,7 @@ Item {
             "settingsCommand": "plasma-settings -m kcm_mobile_wifi",
             "toggleFunction": "toggleWifi",
             "enabled": enabledConnections.wirelessEnabled,
-            "applet": null,
-            "viewIndex": 1
+            "applet": null
         });
         settingsModel.append({
             "text": i18n("Bluetooth"),
@@ -190,8 +184,7 @@ Item {
             "toggleFunction": "toggleBluetooth",
             "delegate": "",
             "enabled": BluezQt.Manager.bluetoothOperational,
-            "applet": null,
-            "viewIndex": 2
+            "applet": null
         });
         settingsModel.append({
             "text": i18n("Mobile Data"),
@@ -199,8 +192,7 @@ Item {
             "settingsCommand": "plasma-settings -m kcm_mobile_broadband",
             "toggleFunction": "toggleWwan",
             "enabled": enabledConnections.wwanEnabled,
-            "applet": null,
-            "viewIndex": 3
+            "applet": null
         });
         settingsModel.append({
             "text": i18n("Battery"),
@@ -208,8 +200,7 @@ Item {
             "enabled": false,
             "settingsCommand": "plasma-settings -m kcm_mobile_power",
             "toggleFunction": "",
-            "applet": null,
-            "viewIndex": 4
+            "applet": null
         });
         settingsModel.append({
             "text": i18n("Sound"),
@@ -217,8 +208,7 @@ Item {
             "enabled": false,
             "settingsCommand": "plasma-settings -m kcm_pulseaudio",
             "toggleFunction": "",
-            "applet": null,
-            "viewIndex": 5
+            "applet": null
         });
         settingsModel.append({
             "text": i18n("Flashlight"),
@@ -226,16 +216,14 @@ Item {
             "enabled": plasmoid.nativeInterface.torchEnabled,
             "settingsCommand": "",
             "toggleFunction": "toggleTorch",
-            "applet": null,
-            "viewIndex": 6
+            "applet": null
         });
         settingsModel.append({
             "text": i18n("Location"),
             "icon": "gps",
             "enabled": false,
             "settingsCommand": "",
-            "applet": null,
-            "viewIndex": 7
+            "applet": null
         });
         settingsModel.append({
             "text": i18n("Screenshot"),
@@ -243,8 +231,7 @@ Item {
             "enabled": false,
             "settingsCommand": "",
             "toggleFunction": "requestScreenshot",
-            "applet": null,
-            "viewIndex": 8
+            "applet": null
         });
         settingsModel.append({
             "text": i18n("Auto-rotate"),
@@ -252,8 +239,7 @@ Item {
             "enabled": plasmoid.nativeInterface.autoRotateEnabled,
             "settingsCommand": "",
             "toggleFunction": "toggleRotation",
-            "applet": null,
-            "viewIndex": 9
+            "applet": null
         });
         settingsModel.append({
             "text": i18n("Night Color"),
@@ -261,8 +247,7 @@ Item {
             "enabled": compositorAdaptor.active,
             "settingsCommand": "", // change once night color kcm is added
             "toggleFunction": "toggleNightColor",
-            "applet": null,
-            "viewIndex": 10
+            "applet": null
         });
 
         brightnessSlider.moved.connect(function() {
