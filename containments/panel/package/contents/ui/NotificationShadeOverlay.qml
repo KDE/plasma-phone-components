@@ -112,8 +112,8 @@ NanoShell.FullScreenOverlay {
         id: closeAnim
         PropertyAnimation {
             target: window
-            duration: units.longDuration
-            easing.type: Easing.InOutQuad
+            duration: units.shortDuration
+            easing.type: Easing.OutQuart
             properties: "offset"
             from: window.offset
             to: 0
@@ -128,8 +128,8 @@ NanoShell.FullScreenOverlay {
     PropertyAnimation {
         id: toPinnedAnim
         target: window
-        duration: units.longDuration
-        easing.type: Easing.InOutQuad
+        duration: units.shortDuration
+        easing.type: Easing.OutQuart
         properties: "offset"
         from: window.offset
         to: window.pinnedPanelHeight
@@ -137,8 +137,8 @@ NanoShell.FullScreenOverlay {
     PropertyAnimation {
         id: toFullOpenAnim
         target: window
-        duration: units.longDuration
-        easing.type: Easing.InOutQuad
+        duration: units.shortDuration
+        easing.type: Easing.OutQuart
         properties: "offset"
         from: window.offset
         to: window.fullPanelHeight
@@ -168,7 +168,7 @@ NanoShell.FullScreenOverlay {
             z: 2
             width: parent.width
             height: parent.height
-//             onClicked: window.close();
+//             onClicked: window.close(); causes it to close on every tap
             
             property int oldMouseY: 0
             

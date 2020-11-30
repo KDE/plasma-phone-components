@@ -144,13 +144,6 @@ Item {
         }
     }
 
-    PlasmaCore.DataSource {
-        id: timeSource
-        engine: "time"
-        connectedSources: ["Local"]
-        interval: 60 * 1000
-    }
-
     TopPanel {
         id: topPanel
     }
@@ -182,8 +175,8 @@ Item {
         anchors.fill: parent
         onPressed: {
             shadeOverlay.cancelAnimations();
-            oldMouseY = mouse.y;
             shadeOverlay.offset = 0;
+            oldMouseY = mouse.y;
             shadeOverlay.showFullScreen();
         }
         onPositionChanged: {

@@ -103,6 +103,7 @@ ColumnLayout {
             window.direction = oldMouseY > mouse.y ? NotificationShadeOverlay.MovementDirection.Up : NotificationShadeOverlay.MovementDirection.Down;
             window.offset += mouse.y - oldMouseY;
             oldMouseY = mouse.y;
+            mouse.accepted = false;
         }
     }
 }

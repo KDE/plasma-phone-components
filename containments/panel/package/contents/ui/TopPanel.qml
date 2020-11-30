@@ -46,6 +46,14 @@ PlasmaCore.ColorScope {
         bottom: parent.bottom
     }
     height: root.height
+    
+    PlasmaCore.DataSource {
+        id: timeSource
+        engine: "time"
+        connectedSources: ["Local"]
+        interval: 60 * 1000
+    }
+    
     Rectangle {
         anchors.fill: parent
         gradient: Gradient {
@@ -91,7 +99,7 @@ PlasmaCore.ColorScope {
         property bool is24HourTime: Qt.locale().timeFormat(Locale.ShortFormat).toLowerCase().indexOf("ap") === -1
         
         anchors.fill: parent
-        text: Qt.formatTime(root.timeSource.data.Local.DateTime, is24HourTime ? "h:mm" : "h:mm ap")
+        text: Qt.formatTime(timeSource.data.Local.DateTime, is24HourTime ? "h:mm" : "h:mm ap")
         color: PlasmaCore.ColorScope.textColor
         horizontalAlignment: Qt.AlignHCenter
         verticalAlignment: Qt.AlignVCenter

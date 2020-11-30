@@ -23,6 +23,7 @@ import QtQuick.Layouts 1.1
 import QtQuick.Window 2.2
 import QtQuick.Controls 2.15
 import QtGraphicalEffects 1.15
+import QtQml.Models 2.3
 import org.kde.plasma.core 2.0 as PlasmaCore
 import org.kde.plasma.components 3.0 as PlasmaComponents
 import org.kde.plasma.private.nanoshell 2.0 as NanoShell
@@ -37,9 +38,9 @@ Control {
     property int quickSettingSize: Kirigami.Units.gridUnit * 3
     property double allSettingsOpacity: stateGradient > 1 ? stateGradient - 1 : 0
     
-    property int pinnedColumns: 6 // number of columns when pinned settings are visible
+    property int pinnedColumns: 4 // number of columns when pinned settings are visible
     property int columns: 4 // number of columns when all settings are visible
-    // TODO cap the number of rows
+    property int rows: 2
     
     implicitWidth: parent.implicitWidth
     height: {
@@ -47,7 +48,7 @@ Control {
         if (stateGradient <= 1) {
             return baseHeight;
         } else {
-            return baseHeight + (quickSettingSize * 8.5 - baseHeight) * (stateGradient - 1);
+            return baseHeight + (quickSettingSize * 6 - baseHeight) * (stateGradient - 1);
         }
     }
     implicitHeight: height
@@ -75,6 +76,29 @@ Control {
         }
     }
     
+    SortFilterModel {
+        id: pinnedSettings
+        filterAcceptsItem: (item) => item.index < quickSettingsPanel.pinnedColumns;
+        lessThan: (left, right) => left.index < right.index;
+        model: quickSettings.model
+        
+        delegate: QuickSettingsDelegate {
+            id: delegateItem
+            size: quickSettingsPanel.quickSettingSize
+//             opacity: index >= quickSettingsPanel.columns ? (1 - (quickSettingsPanel.stateGradient - 1)) : 1
+            textVisibility: quickSettingsPanel.allSettingsOpacity
+            
+            Connections {
+                target: delegateItem
+                onCloseRequested: quickSettings.closeRequested();
+            }
+            Connections {
+                target: quickSettings
+                onClosed: delegateItem.panelClosed();
+            }
+        }
+    }
+    
     // actual panel contents
     contentItem: ColumnLayout {
         id: panelContent
@@ -82,6 +106,8 @@ Control {
         anchors.right: parent.right
         anchors.top: parent.top
         anchors.margins: Kirigami.Units.largeSpacing * 2
+        
+        property int fullIconSpacing: (panelContent.width - quickSettingsPanel.quickSettingSize * quickSettingsPanel.pinnedColumns + (quickSettingsPanel.columns - quickSettingsPanel.pinnedColumns)) / quickSettingsPanel.pinnedColumns
         property int iconSpacing: {
             if (quickSettingsPanel.stateGradient <= 1) {
                 return (panelContent.width - quickSettingsPanel.quickSettingSize * quickSettingsPanel.pinnedColumns) / quickSettingsPanel.pinnedColumns;
@@ -90,61 +116,84 @@ Control {
                 return (panelContent.width - quickSettingsPanel.quickSettingSize * columnNum) / quickSettingsPanel.pinnedColumns;
             }
         }
-        spacing: iconSpacing
+        spacing: Kirigami.Units.smallSpacing
         
-        // pinned row of delegates
-        RowLayout {
-            spacing: panelContent.iconSpacing
-            Repeater {
-                model: quickSettings.model
-                delegate: QuickSettingsDelegate {
-                    id: delegateItem
-                    size: quickSettingsPanel.quickSettingSize
-                    // TODO FIGURE OUT WHY VIEWINDEX DOESNT WORK
-                    visible: index < quickSettingsPanel.pinnedColumns // ignore elements after
-                    opacity: index >= quickSettingsPanel.columns ? (1 - (quickSettingsPanel.stateGradient - 1)) : 1
-                    textVisibility: quickSettingsPanel.allSettingsOpacity
-                    
-                    Connections {
-                        target: delegateItem
-                        onCloseRequested: quickSettings.closeRequested();
+        SwipeView {
+            id: quickSettingsView
+            currentIndex: 0
+            Layout.fillWidth: true
+            clip: true
+            
+            // first page is special, as it has pinned
+            ColumnLayout {
+                id: firstPage
+                spacing: panelContent.fullIconSpacing
+                // pinned row of delegates
+                RowLayout {
+                    spacing: panelContent.iconSpacing
+                    Repeater {
+                        model: pinnedSettings
                     }
-                    Connections {
-                        target: quickSettings
-                        onClosed: delegateItem.panelClosed();
+                }
+                
+                // rows below
+                GridLayout {
+                    Layout.fillWidth: true
+                    columnSpacing: panelContent.fullIconSpacing
+                    rowSpacing: panelContent.fullIconSpacing
+                    columns: quickSettingsPanel.columns
+                    opacity: quickSettingsPanel.allSettingsOpacity
+                    
+                    SettingsRowModel {
+                        id: rowModel
+                        startIndex: columns
+                        endIndex: (columns*rows)-1
+                        settingsComponent: quickSettings
+                    }
+                    
+                    Repeater {
+                        model: rowModel
+                    }
+                }
+            }
+            
+            // other pages
+            Repeater {
+                implicitHeight: firstPage.height
+                implicitWidth: firstPage.width
+                model: Math.floor(quickSettings.model.count / (columns * rows))
+                
+                Item {
+                    implicitHeight: firstPage.height
+                    implicitWidth: firstPage.width
+                    SettingsRowModel {
+                        id: rowModel
+                        startIndex: (index + 1) * (quickSettingsPanel.columns*quickSettingsPanel.rows)
+                        endIndex: (index + 2) * (quickSettingsPanel.columns*quickSettingsPanel.rows) - 1
+                        settingsComponent: quickSettings
+                    }
+                    
+                    GridLayout {
+                        implicitHeight: firstPage.height
+                        implicitWidth: firstPage.width
+                        columnSpacing: panelContent.fullIconSpacing
+                        rowSpacing: panelContent.fullIconSpacing
+                        columns: quickSettingsPanel.columns
+                        rows: quickSettingsPanel.rows
+                        opacity: quickSettingsPanel.allSettingsOpacity
+                        
+                        Repeater {
+                            model: rowModel
+                        }
                     }
                 }
             }
         }
         
-        // rest of the delegates
-        GridLayout {
-            Layout.fillWidth: true
-            columnSpacing: panelContent.iconSpacing
-            rowSpacing: panelContent.iconSpacing
-            columns: quickSettingsPanel.columns
-            opacity: quickSettingsPanel.allSettingsOpacity
-            
-            Repeater {
-                visible: quickSettingsPanel.stateGradient > 1
-                
-                model: quickSettings.model
-                delegate: QuickSettingsDelegate {
-                    id: delegateItem
-                    size: quickSettingsPanel.quickSettingSize
-                    visible: index >= quickSettingsPanel.columns // ignore first row (already rendered above)
-                    textVisibility: quickSettingsPanel.allSettingsOpacity
-
-                    Connections {
-                        target: delegateItem
-                        onCloseRequested: quickSettings.closeRequested();
-                    }
-                    Connections {
-                        target: quickSettings
-                        onClosed: delegateItem.panelClosed();
-                    }
-                }
-            }
+        PageIndicator {
+            count: quickSettingsView.count
+            currentIndex: quickSettingsView.currentIndex
+            Layout.alignment: Qt.AlignCenter
         }
 
         // brightness slider
