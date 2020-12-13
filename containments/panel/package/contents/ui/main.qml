@@ -33,6 +33,8 @@ import org.kde.plasma.private.mobileshell 1.0 as MobileShell
 
 import "LayoutManager.js" as LayoutManager
 
+import org.kde.kirigami 2.11 as Kirigami
+
 import "quicksettings"
 import "indicators" as Indicators
 
@@ -148,16 +150,9 @@ Item {
         id: topPanel
     }
     
-    // screen top panel background
-    Rectangle {
-        anchors.fill: parent
-        color: PlasmaCore.Theme.backgroundColor
-        opacity: shadeOverlay.stateGradient > 1 ? 0.6 : 0.6 * shadeOverlay.stateGradient
-    }
-    
     DropShadow {
         anchors.fill: topPanel
-        visible: !showingApp
+        visible: !showingApp && (shadeOverlay.stateGradient == 0)
         cached: true
         horizontalOffset: 0
         verticalOffset: 1
@@ -187,6 +182,7 @@ Item {
                 shadeOverlay.offset = shadeOverlay.pinnedPanelHeight;
             } else {
                 shadeOverlay.offset += diff;
+                shadeOverlay.offset = Math.max(0, shadeOverlay.offset);
             }
             oldMouseY = mouse.y;
         }

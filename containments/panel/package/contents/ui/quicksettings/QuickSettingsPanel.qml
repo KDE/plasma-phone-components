@@ -34,17 +34,18 @@ Control {
     
     // 0 - closed, 1 - pinned settings visible, 2 - all settings visible
     property double stateGradient
+    property int panelState
     
     property int quickSettingSize: Kirigami.Units.gridUnit * 3
     property double allSettingsOpacity: stateGradient > 1 ? stateGradient - 1 : 0
     
-    property int pinnedColumns: 4 // number of columns when pinned settings are visible
+    property int pinnedColumns: 5 // number of columns when pinned settings are visible
     property int columns: 4 // number of columns when all settings are visible
     property int rows: 2
     
     implicitWidth: parent.implicitWidth
     height: {
-        let baseHeight = quickSettingSize + Kirigami.Units.gridUnit * 2;
+        let baseHeight = quickSettingSize + Kirigami.Units.gridUnit * 4;
         if (stateGradient <= 1) {
             return baseHeight;
         } else {
@@ -76,16 +77,48 @@ Control {
         }
     }
     
+    PlasmaCore.DataSource {
+        id: timeSource
+        engine: "time"
+        connectedSources: ["Local"]
+        interval: 60 * 1000
+    }
+    
+    // pinned settings model
     SortFilterModel {
-        id: pinnedSettings
-        filterAcceptsItem: (item) => item.index < quickSettingsPanel.pinnedColumns;
+        id: pinnedSettingsShown
+        filterAcceptsItem: (item) => item.index < quickSettingsPanel.columns;
         lessThan: (left, right) => left.index < right.index;
         model: quickSettings.model
         
         delegate: QuickSettingsDelegate {
             id: delegateItem
             size: quickSettingsPanel.quickSettingSize
-//             opacity: index >= quickSettingsPanel.columns ? (1 - (quickSettingsPanel.stateGradient - 1)) : 1
+            textVisibility: quickSettingsPanel.allSettingsOpacity
+            
+            Connections {
+                target: delegateItem
+                onCloseRequested: quickSettings.closeRequested();
+            }
+            Connections {
+                target: quickSettings
+                onClosed: delegateItem.panelClosed();
+            }
+        }
+    }
+    
+    // pinned settings 2 model
+    SortFilterModel {
+        id: pinnedSettingsToHide
+        filterAcceptsItem: (item) => item.index < quickSettingsPanel.pinnedColumns && item.index >= quickSettingsPanel.columns;
+        lessThan: (left, right) => left.index < right.index;
+        model: quickSettings.model
+        
+        delegate: QuickSettingsDelegate {
+            id: delegateItem
+            size: quickSettingsPanel.quickSettingSize
+            opacity: 1 - 4 * (quickSettingsPanel.stateGradient - 1)
+            visible: quickSettingsPanel.stateGradient < 1.5
             textVisibility: quickSettingsPanel.allSettingsOpacity
             
             Connections {
@@ -102,22 +135,44 @@ Control {
     // actual panel contents
     contentItem: ColumnLayout {
         id: panelContent
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.top: parent.top
-        anchors.margins: Kirigami.Units.largeSpacing * 2
+        anchors {
+            left: parent.left
+            right: parent.right
+            top: parent.top
+            topMargin: Kirigami.Units.largeSpacing
+            leftMargin: Kirigami.Units.gridUnit
+            rightMargin: Kirigami.Units.gridUnit
+        }
         
-        property int fullIconSpacing: (panelContent.width - quickSettingsPanel.quickSettingSize * quickSettingsPanel.pinnedColumns + (quickSettingsPanel.columns - quickSettingsPanel.pinnedColumns)) / quickSettingsPanel.pinnedColumns
-        property int iconSpacing: {
+        property int fullIconSpacing: (panelContent.width - quickSettingsPanel.quickSettingSize * quickSettingsPanel.columns) / (quickSettingsPanel.columns + 1)
+        property double iconSpacing: {
+            let pinnedSpacing = (panelContent.width - quickSettingsPanel.quickSettingSize * quickSettingsPanel.pinnedColumns) / (quickSettingsPanel.pinnedColumns + 1);
             if (quickSettingsPanel.stateGradient <= 1) {
-                return (panelContent.width - quickSettingsPanel.quickSettingSize * quickSettingsPanel.pinnedColumns) / quickSettingsPanel.pinnedColumns;
+                return pinnedSpacing;
             } else {
-                let columnNum = quickSettingsPanel.pinnedColumns + (stateGradient - 1) * (quickSettingsPanel.columns - quickSettingsPanel.pinnedColumns);
-                return (panelContent.width - quickSettingsPanel.quickSettingSize * columnNum) / quickSettingsPanel.pinnedColumns;
+                return pinnedSpacing + (fullIconSpacing - pinnedSpacing) * (stateGradient - 1);
             }
         }
-        spacing: Kirigami.Units.smallSpacing
+        spacing: Kirigami.Units.largeSpacing
         
+        // time text
+        RowLayout {
+            Layout.fillWidth: true
+            Label {
+                text: Qt.formatTime(timeSource.data["Local"]["DateTime"], root.is24HourTime ? "h:mm" : "h:mm ap")
+                font.pointSize: Kirigami.Theme.defaultFont.pointSize * 1.1
+            }
+            Item {
+                Layout.fillWidth: true
+            }
+            Label {
+                text: Qt.formatDateTime(timeSource.data["Local"]["DateTime"], "ddd MMMM d")
+                horizontalAlignment: Text.AlignRight
+                font.pointSize: Kirigami.Theme.defaultFont.pointSize * 1.1
+            }
+        }
+        
+        // quick settings
         SwipeView {
             id: quickSettingsView
             currentIndex: 0
@@ -127,20 +182,27 @@ Control {
             // first page is special, as it has pinned
             ColumnLayout {
                 id: firstPage
+                Layout.fillWidth: true
                 spacing: panelContent.fullIconSpacing
                 // pinned row of delegates
                 RowLayout {
                     spacing: panelContent.iconSpacing
+                    Layout.leftMargin: spacing
                     Repeater {
-                        model: pinnedSettings
+                        model: pinnedSettingsShown
+                    }
+                    Repeater {
+                        model: pinnedSettingsToHide
                     }
                 }
                 
                 // rows below
                 GridLayout {
                     Layout.fillWidth: true
+                    Layout.leftMargin: columnSpacing
+                    Layout.rightMargin: columnSpacing
                     columnSpacing: panelContent.fullIconSpacing
-                    rowSpacing: panelContent.fullIconSpacing
+                    rowSpacing: panelContent.fullIconSpacing - Kirigami.Units.smallSpacing
                     columns: quickSettingsPanel.columns
                     opacity: quickSettingsPanel.allSettingsOpacity
                     
@@ -165,7 +227,8 @@ Control {
                 
                 Item {
                     implicitHeight: firstPage.height
-                    implicitWidth: firstPage.width
+                    implicitWidth: grid.width
+                    Layout.leftMargin: panelContent.fullIconSpacing
                     SettingsRowModel {
                         id: rowModel
                         startIndex: (index + 1) * (quickSettingsPanel.columns*quickSettingsPanel.rows)
@@ -174,10 +237,10 @@ Control {
                     }
                     
                     GridLayout {
+                        id: grid
                         implicitHeight: firstPage.height
-                        implicitWidth: firstPage.width
                         columnSpacing: panelContent.fullIconSpacing
-                        rowSpacing: panelContent.fullIconSpacing
+                        rowSpacing: panelContent.fullIconSpacing - Kirigami.Units.smallSpacing
                         columns: quickSettingsPanel.columns
                         rows: quickSettingsPanel.rows
                         opacity: quickSettingsPanel.allSettingsOpacity
@@ -198,7 +261,6 @@ Control {
 
         // brightness slider
         BrightnessItem {
-            visible: stateGradient > 1
             opacity: quickSettingsPanel.allSettingsOpacity
             id: brightnessSlider
             width: quickSettingsPanel.implicitWidth
@@ -206,6 +268,7 @@ Control {
             label: i18n("Display Brightness")
             value: quickSettings.screenBrightness
             maximumValue: quickSettings.maximumScreenBrightness
+            onMoved: quickSettings.screenBrightness = brightnessSlider.value
             Connections {
                 target: quickSettings
                 onScreenBrightnessChanged: brightnessSlider.value = quickSettings.screenBrightness

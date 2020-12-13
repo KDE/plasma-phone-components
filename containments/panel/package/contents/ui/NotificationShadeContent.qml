@@ -36,6 +36,7 @@ ColumnLayout {
     
     // 0 - closed, 1 - pinned settings visible, 2 - all settings visible
     property double stateGradient
+    property int panelState
     
     property alias notificationView: fullRepresentationView
     
@@ -43,20 +44,22 @@ ColumnLayout {
     
     // top quicksettings panel
     QuickSettingsPanel {
+        z: 1
         id: quickSettingsPanel
         y: stateGradient >= 1 ? 0 : (-height - Kirigami.Units.gridUnit) + stateGradient * (height + Kirigami.Units.gridUnit)
         stateGradient: notifShadeContent.stateGradient
+        panelState: notifShadeContent.panelState
     }
     
-    DropShadow {
-        anchors.fill: quickSettingsPanel
-        source: quickSettingsPanel
-        color: Qt.darker(PlasmaCore.Theme.backgroundColor, 1.2)
-        radius: 4
-        samples: 6
-        horizontalOffset: 0
-        verticalOffset: 1
-    }
+    //DropShadow {
+        //anchors.fill: quickSettingsPanel
+        //source: quickSettingsPanel
+        //color: Qt.darker(PlasmaCore.Theme.backgroundColor, 1.2)
+        //radius: 5
+        //samples: 5
+        //horizontalOffset: 0
+        //verticalOffset: 1
+    //}
     
     // notifications list
     ListView {
@@ -87,7 +90,6 @@ ColumnLayout {
     
     // track swiping
     MouseArea {
-        z: 1
         property int oldMouseY: 0
         anchors.fill: notifShadeContent
             

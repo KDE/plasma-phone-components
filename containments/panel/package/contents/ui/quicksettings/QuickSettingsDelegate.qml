@@ -36,6 +36,7 @@ ColumnLayout {
     required property bool enabled
     required property string settingsCommand
     required property var toggleFunction
+    required property int index
     
     required property double textVisibility // 0 - 1
     required property int size
@@ -45,7 +46,7 @@ ColumnLayout {
         Layout.preferredWidth: size
         Layout.minimumHeight: size
         Layout.alignment: Qt.AlignHCenter
-        radius: units.smallSpacing
+        radius: Kirigami.Units.smallSpacing
         border.color: delegateRoot.enabled ?
             Qt.darker(Kirigami.ColorUtils.adjustColor(PlasmaCore.ColorScope.highlightColor, {}), 1.25) :
             Kirigami.ColorUtils.adjustColor(PlasmaCore.ColorScope.textColor, {"alpha": 0.2*255})
@@ -63,10 +64,9 @@ ColumnLayout {
 
         PlasmaCore.IconItem {
             id: icon
-            colorGroup: PlasmaCore.ColorScope.colorGroup
             anchors {
                 fill: parent
-                margins: units.smallSpacing
+                margins: Kirigami.Units.gridUnit / 1.8
             }
             source: delegateRoot.icon
             MouseArea {
@@ -128,7 +128,7 @@ ColumnLayout {
                 verticalCenterOffset: -units.smallSpacing
             }
             visible: delegateRoot.settingsCommand
-            width: units.iconSizes.small/2
+            width: units.iconSizes.small/3
             height: width
             elementId: "down-arrow"
             svg: PlasmaCore.Svg {

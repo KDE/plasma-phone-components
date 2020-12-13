@@ -173,7 +173,7 @@ Item {
             "text": i18n("Wifi"),
             "icon": "network-wireless-signal",
             "settingsCommand": "plasma-settings -m kcm_mobile_wifi",
-            "toggleFunction": "toggleWifi",
+            "toggleFunction": root.toggleWifi,
             "enabled": enabledConnections.wirelessEnabled,
             "applet": null
         });
@@ -181,7 +181,7 @@ Item {
             "text": i18n("Bluetooth"),
             "icon": "network-bluetooth",
             "settingsCommand": "plasma-settings -m kcm_bluetooth",
-            "toggleFunction": "toggleBluetooth",
+            "toggleFunction": root.toggleBluetooth,
             "delegate": "",
             "enabled": BluezQt.Manager.bluetoothOperational,
             "applet": null
@@ -190,7 +190,7 @@ Item {
             "text": i18n("Mobile Data"),
             "icon": "network-modem",
             "settingsCommand": "plasma-settings -m kcm_mobile_broadband",
-            "toggleFunction": "toggleWwan",
+            "toggleFunction": root.toggleWwan,
             "enabled": enabledConnections.wwanEnabled,
             "applet": null
         });
@@ -215,7 +215,7 @@ Item {
             "icon": "flashlight-on",
             "enabled": plasmoid.nativeInterface.torchEnabled,
             "settingsCommand": "",
-            "toggleFunction": "toggleTorch",
+            "toggleFunction": root.toggleTorch,
             "applet": null
         });
         settingsModel.append({
@@ -230,7 +230,7 @@ Item {
             "icon": "spectacle",
             "enabled": false,
             "settingsCommand": "",
-            "toggleFunction": "requestScreenshot",
+            "toggleFunction": root.requestScreenshot,
             "applet": null
         });
         settingsModel.append({
@@ -238,7 +238,7 @@ Item {
             "icon": "rotation-allowed",
             "enabled": plasmoid.nativeInterface.autoRotateEnabled,
             "settingsCommand": "",
-            "toggleFunction": "toggleRotation",
+            "toggleFunction": root.toggleRotation,
             "applet": null
         });
         settingsModel.append({
@@ -246,7 +246,7 @@ Item {
             "icon": "redshift-status-on",
             "enabled": compositorAdaptor.active,
             "settingsCommand": "", // change once night color kcm is added
-            "toggleFunction": "toggleNightColor",
+            "toggleFunction": root.toggleNightColor,
             "applet": null
         });
 

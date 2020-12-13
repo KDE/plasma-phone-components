@@ -39,7 +39,6 @@ import "indicators" as Indicators
 PlasmaCore.ColorScope {
     z: 1
     colorGroup: root.showingApp ? PlasmaCore.Theme.NormalColorGroup : PlasmaCore.Theme.ComplementaryColorGroup
-    //parent: slidingPanel.visible && !slidingPanel.wideScreen ? panelContents : root
     anchors {
         left: parent.left
         right: parent.right
@@ -67,66 +66,80 @@ PlasmaCore.ColorScope {
             }
         }
     }
-
-    Loader {
-        id: strengthLoader
-        height: parent.height
-        width: item ? item.width : 0
-        source: Qt.resolvedUrl("indicators/SignalStrength.qml")
+    
+    // screen top panel background
+    Rectangle {
+        anchors.fill: parent
+        color: "black" // PlasmaCore.Theme.backgroundColor
+        opacity: shadeOverlay.stateGradient > 1 ? 0.6 : 0.6 * shadeOverlay.stateGradient
+        onOpacityChanged: console.log(opacity)
     }
 
-    Row {
-        id: sniRow
-        anchors.left: strengthLoader.right
-        height: parent.height
-        Repeater {
-            id: statusNotifierRepeater
-            model: PlasmaCore.SortFilterModel {
-                id: filteredStatusNotifiers
-                filterRole: "Title"
-                sourceModel: PlasmaCore.DataModel {
-                    dataSource: statusNotifierSource
+    
+    PlasmaCore.ColorScope {
+        anchors.fill: parent
+        colorGroup: root.showingApp && (shadeOverlay.stateGradient == 0) ? PlasmaCore.Theme.NormalColorGroup : PlasmaCore.Theme.ComplementaryColorGroup
+        
+        Loader {
+            id: strengthLoader
+            height: parent.height
+            width: item ? item.width : 0
+            source: Qt.resolvedUrl("indicators/SignalStrength.qml")
+        }
+
+        Row {
+            id: sniRow
+            anchors.left: strengthLoader.right
+            height: parent.height
+            Repeater {
+                id: statusNotifierRepeater
+                model: PlasmaCore.SortFilterModel {
+                    id: filteredStatusNotifiers
+                    filterRole: "Title"
+                    sourceModel: PlasmaCore.DataModel {
+                        dataSource: statusNotifierSource
+                    }
+                }
+
+                delegate: TaskWidget {
                 }
             }
+        }
 
-            delegate: TaskWidget {
+        PlasmaComponents.Label {
+            id: clock
+            property bool is24HourTime: Qt.locale().timeFormat(Locale.ShortFormat).toLowerCase().indexOf("ap") === -1
+            
+            anchors.fill: parent
+            text: Qt.formatTime(timeSource.data.Local.DateTime, is24HourTime ? "h:mm" : "h:mm ap")
+            color: PlasmaCore.ColorScope.textColor
+            horizontalAlignment: Qt.AlignHCenter
+            verticalAlignment: Qt.AlignVCenter
+            font.pixelSize: height / 2
+        }
+
+        RowLayout {
+            id: appletIconsRow
+            anchors {
+                bottom: parent.bottom
+                right: simpleIndicatorsLayout.left
             }
+            height: parent.height
         }
-    }
 
-    PlasmaComponents.Label {
-        id: clock
-        property bool is24HourTime: Qt.locale().timeFormat(Locale.ShortFormat).toLowerCase().indexOf("ap") === -1
-        
-        anchors.fill: parent
-        text: Qt.formatTime(timeSource.data.Local.DateTime, is24HourTime ? "h:mm" : "h:mm ap")
-        color: PlasmaCore.ColorScope.textColor
-        horizontalAlignment: Qt.AlignHCenter
-        verticalAlignment: Qt.AlignVCenter
-        font.pixelSize: height / 2
-    }
-
-    RowLayout {
-        id: appletIconsRow
-        anchors {
-            bottom: parent.bottom
-            right: simpleIndicatorsLayout.left
+        //TODO: pluggable
+        RowLayout {
+            id: simpleIndicatorsLayout
+            anchors {
+                top: parent.top
+                bottom: parent.bottom
+                right: parent.right
+                rightMargin: units.smallSpacing
+            }
+            Indicators.Bluetooth {}
+            Indicators.Wifi {}
+            Indicators.Volume {}
+            Indicators.Battery {}
         }
-        height: parent.height
-    }
-
-    //TODO: pluggable
-    RowLayout {
-        id: simpleIndicatorsLayout
-        anchors {
-            top: parent.top
-            bottom: parent.bottom
-            right: parent.right
-            rightMargin: units.smallSpacing
-        }
-        Indicators.Bluetooth {}
-        Indicators.Wifi {}
-        Indicators.Volume {}
-        Indicators.Battery {}
     }
 }

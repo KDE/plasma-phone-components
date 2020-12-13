@@ -19,7 +19,7 @@
  */
 
 
-import QtQuick 2.0
+import QtQuick 2.12
 import QtQuick.Layouts 1.1
 import QtQuick.Window 2.2
 import org.kde.plasma.core 2.0 as PlasmaCore
@@ -87,10 +87,14 @@ NanoShell.FullScreenOverlay {
         if (window.direction === NotificationShadeOverlay.MovementDirection.None) {
             closeAnim.restart();
         } else if (window.direction === NotificationShadeOverlay.MovementDirection.Down) {
-            if (stateGradient <= 1) {
+            if (panelState == NotificationShadeOverlay.PanelState.Closed) {
                 toPinnedAnim.restart();
             } else {
-                toFullOpenAnim.restart();
+                if (stateGradient <= 1) {
+                    toPinnedAnim.restart();
+                } else {
+                    toFullOpenAnim.restart();
+                }
             }
         } else if (window.direction === NotificationShadeOverlay.MovementDirection.Up) {
             if (stateGradient <= 1) {
@@ -122,6 +126,7 @@ NanoShell.FullScreenOverlay {
             script: {
                 window.visible = false;
                 window.closed();
+                window.panelState = NotificationShadeOverlay.PanelState.Closed;
             }
         }
     }
@@ -133,6 +138,7 @@ NanoShell.FullScreenOverlay {
         properties: "offset"
         from: window.offset
         to: window.pinnedPanelHeight
+        onFinished: window.panelState = NotificationShadeOverlay.PanelState.PinnedSettingsVisible
     }
     PropertyAnimation {
         id: toFullOpenAnim
@@ -142,6 +148,7 @@ NanoShell.FullScreenOverlay {
         properties: "offset"
         from: window.offset
         to: window.fullPanelHeight
+        onFinished: window.panelState = NotificationShadeOverlay.PanelState.AllSettingsVisible
     }
 
     // background rectangle
@@ -152,7 +159,7 @@ NanoShell.FullScreenOverlay {
             bottom: parent.bottom
         }
         height: parent.height - headerHeight // don't layer on top panel indicators (area is darkened separately)
-        color: PlasmaCore.Theme.backgroundColor
+        color: "black" // PlasmaCore.Theme.backgroundColor
         opacity: window.stateGradient > 1 ? 0.6 : 0.6 * window.stateGradient
     }
     
@@ -192,6 +199,7 @@ NanoShell.FullScreenOverlay {
                 contentItem: NotificationShadeContent {
                     width: drawerWidth
                     stateGradient: window.stateGradient
+                    panelState: window.panelState
                 }
             }
         }
