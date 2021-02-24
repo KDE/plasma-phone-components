@@ -98,6 +98,12 @@ Item {
         settingsModel.get(10).enabled = compositorAdaptor.active;
     }
 
+    function toggleAirplaneMode() {
+        nmHandler.enableAirplaneMode(!PlasmaNM.Configuration.airplaneModeEnabled);
+        PlasmaNM.Configuration.airplaneModeEnabled = !PlasmaNM.Configuration.airplaneModeEnabled
+        settingsModel.get(11).enabled = PlasmaNM.Configuration.airplaneModeEnabled;
+    }
+
     function requestShutdown() {
         print("Shutdown requested, depends on ksmserver running");
         var service = pmSource.serviceForSource("PowerDevil");
@@ -249,6 +255,14 @@ Item {
             "enabled": compositorAdaptor.active,
             "settingsCommand": "", // change once night color kcm is added
             "toggleFunction": "toggleNightColor",
+            "applet": null
+        });
+        settingsModel.append({
+            "text": i18n("Airplane Mode"),
+            "icon": "network-flightmode-on",
+            "enabled": PlasmaNM.Configuration.airplaneModeEnabled,
+            "settingsCommand": "",
+            "toggleFunction": "toggleAirplaneMode",
             "applet": null
         });
 
