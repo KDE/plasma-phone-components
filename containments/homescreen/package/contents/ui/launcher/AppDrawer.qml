@@ -24,6 +24,9 @@ import org.kde.plasma.core 2.0 as PlasmaCore
 import org.kde.plasma.components 3.0 as PC3
 //import org.kde.kquickcontrolsaddons 2.0
 import org.kde.kirigami 2.10 as Kirigami
+import QtGraphicalEffects 1.0
+
+import org.kde.plasma.wallpapers.image 2.0 as Wallpaper
 
 import org.kde.plasma.private.nanoshell 2.0 as NanoShell
 
@@ -128,6 +131,28 @@ Item {
         easing.type: Easing.OutQuad
         easing.amplitude: 2.0
     }
+    
+    Wallpaper.Image {
+        id: wallpaper
+    }
+    Image {
+        id: imageWallpaper
+        source: wallpaper.wallpaperPath
+        anchors.fill: parent
+        fillMode: Image.Pad
+        visible: false
+        sourceSize.width: root.width
+        sourceSize.height: root.height
+    }
+    FastBlur {
+        id: blur
+        cached: true
+        source: imageWallpaper
+        anchors.fill: parent
+        radius: 50
+        opacity: Math.min(1, openFactor)
+    }
+
 
     PC3.Label {
         id: metrics
