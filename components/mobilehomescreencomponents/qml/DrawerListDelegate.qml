@@ -1,5 +1,6 @@
 /*
  *  SPDX-FileCopyrightText: 2019 Marco Martin <mart@kde.org>
+ *  SPDX-FileCopyrightText: 2021 Devin Lin <espidev@gmail.com>
  *
  *  SPDX-License-Identifier: GPL-2.0-or-later
  */
@@ -19,9 +20,6 @@ import org.kde.plasma.private.mobileshell 1.0 as MobileShell
 
 MouseArea {
     id: delegate
-    width: GridView.view.cellWidth
-    height: GridView.view.cellHeight
-
     property int reservedSpaceForLabel
     property alias iconItem: icon
 
@@ -39,27 +37,36 @@ MouseArea {
         if (model.applicationRunning) {
             delegate.launch(0, 0, "", model.applicationName, model.applicationStorageId);
         } else {
-            delegate.launch(delegate.x + (units.smallSpacing * 2), delegate.y + (units.smallSpacing * 2), icon.source, model.applicationName, model.applicationStorageId);
+            delegate.launch(delegate.x + (PlasmaCore.Units.smallSpacing * 2), delegate.y + (PlasmaCore.Units.smallSpacing * 2), icon.source, model.applicationName, model.applicationStorageId);
         }
     }
-
-    //preventStealing: true
-    ColumnLayout {
+    hoverEnabled: true
+    
+    Rectangle {
+        anchors.fill: parent
+        color: delegate.pressed ? Qt.rgba(255, 255, 255, 0.2) : (delegate.containsMouse ? Qt.rgba(255, 255, 255, 0.05) : "transparent")
+        Behavior on color { 
+            ColorAnimation { duration: PlasmaCore.Units.shortDuration } 
+        }
+    }
+    
+    RowLayout {
         anchors {
             fill: parent
-            leftMargin: units.smallSpacing * 2
-            topMargin: units.smallSpacing * 2
-            rightMargin: units.smallSpacing * 2
-            bottomMargin: units.smallSpacing * 2
+            leftMargin: PlasmaCore.Units.smallSpacing * 2
+            topMargin: PlasmaCore.Units.smallSpacing
+            rightMargin: PlasmaCore.Units.smallSpacing * 2
+            bottomMargin: PlasmaCore.Units.smallSpacing
         }
         spacing: 0
 
         PlasmaCore.IconItem {
             id: icon
 
-            Layout.alignment: Qt.AlignHCenter | Qt.AlignTop
-            Layout.fillWidth: true
-            Layout.minimumHeight: parent.height - delegate.reservedSpaceForLabel
+            Layout.alignment: Qt.AlignLeft
+            Layout.minimumWidth: Layout.minimumHeight
+            Layout.preferredWidth: Layout.minimumHeight
+            Layout.minimumHeight: parent.height
             Layout.preferredHeight: Layout.minimumHeight
 
             usesPlasmaTheme: false
@@ -72,7 +79,7 @@ MouseArea {
                 }
                 visible: model.applicationRunning
                 radius: width
-                width: units.smallSpacing
+                width: PlasmaCore.Units.smallSpacing
                 height: width
                 color: theme.highlightColor
             }
@@ -83,21 +90,19 @@ MouseArea {
             visible: text.length > 0
 
             Layout.fillWidth: true
-            Layout.preferredHeight: delegate.reservedSpaceForLabel
             wrapMode: Text.WordWrap
-            Layout.leftMargin: -parent.anchors.leftMargin + units.smallSpacing
-            Layout.rightMargin: -parent.anchors.rightMargin + units.smallSpacing
-            horizontalAlignment: Text.AlignHCenter
-            verticalAlignment: Text.AlignTop
-            maximumLineCount: 2
+            Layout.leftMargin: PlasmaCore.Units.smallSpacing * 2
+            Layout.rightMargin: PlasmaCore.Units.largeSpacing
+            maximumLineCount: 1
             elide: Text.ElideRight
 
             text:  model.applicationName
 
             //FIXME: export smallestReadableFont
-            font.pointSize: theme.defaultFont.pointSize * 0.9
+            font.pointSize: Math.round(theme.defaultFont.pointSize * 1.1)
             color: "white"
         }
     }
 }
+
 

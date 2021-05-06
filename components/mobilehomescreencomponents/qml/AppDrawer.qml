@@ -1,15 +1,17 @@
 /*
  *  SPDX-FileCopyrightText: 2021 Marco Martin <mart@kde.org>
+ *  SPDX-FileCopyrightText: 2021 Devin Lin <espidev@gmail.com>
  *
  *  SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-import QtQuick 2.14
+import QtQuick 2.15
 import QtQuick.Layouts 1.1
 
 import org.kde.plasma.plasmoid 2.0
 import org.kde.plasma.core 2.0 as PlasmaCore
 import org.kde.plasma.components 3.0 as PC3
+import org.kde.plasma.extras 2.0 as PlasmaExtra
 //import org.kde.kquickcontrolsaddons 2.0
 import org.kde.kirigami 2.10 as Kirigami
 
@@ -36,9 +38,9 @@ Item {
     }
 
     readonly property int status: {
-        if (view.contentY >= -view.originY - view.height) {
+        if (flickable.contentY >= -flickable.originY - view.height) {
             return AppDrawer.Status.Open;
-        } else if (view.contentY > -view.originY - view.height*2 + closedPositionOffset*2) {
+        } else if (flickable.contentY > -flickable.originY - view.height*2 + closedPositionOffset*2) {
             return AppDrawer.Status.Peeking;
         } else {
             return AppDrawer.Status.Closed;
@@ -53,22 +55,19 @@ Item {
     property real bottomPadding: 100
     property real rightPadding: 0
 
-    readonly property int columns: Math.floor(view.width / cellWidth)
-    property alias cellWidth: view.cellWidth
-    property alias cellHeight: view.cellHeight
+    property var flickable: gridViewLoader.item
+    
     signal launched
     signal dragStarted
 
     readonly property int reservedSpaceForLabel: metrics.height
     property int availableCellHeight: units.iconSizes.huge + reservedSpaceForLabel
 
-    property alias flickable: view
-
-    readonly property real openFactor: Math.min(1, Math.max(0, Math.min(1, (view.contentY + view.originY + view.height*2 - root.closedPositionOffset*2) / (units.gridUnit * 10))))
+    readonly property real openFactor: Math.min(1, Math.max(0, Math.min(1, (flickable.contentY + flickable.originY + view.height*2 - root.closedPositionOffset*2) / (units.gridUnit * 10))))
 
     function open() {
         if (root.status === AppDrawer.Status.Open) {
-            view.flick(0,1);
+            flickable.flick(0,1);
         } else {
             scrollAnim.to = 0
             scrollAnim.restart();
@@ -87,14 +86,14 @@ Item {
             return;
         }
 
-        if (view.movementDirection === AppDrawer.MovementDirection.Up) {
-            if (view.contentY > 7 * -view.height / 8) { // over one eighth of the screen
+        if (flickable.movementDirection === AppDrawer.MovementDirection.Up) {
+            if (flickable.contentY > 7 * -view.height / 8) { // over one eighth of the screen
                 open();
             } else {
                 close();
             }
         } else {
-            if (view.contentY < -view.height / 8) { // over one eighth of the screen 
+            if (flickable.contentY < -view.height / 8) { // over one eighth of the screen 
                 close();
             } else {
                 open();
@@ -105,14 +104,14 @@ Item {
     Drag.dragType: Drag.Automatic
 
     onOffsetChanged: {
-        if (!view.moving) {
-            view.contentY = Math.max(0, offset) - view.originY - view.height*2 + closedPositionOffset*2
+        if (!flickable.moving) {
+            flickable.contentY = Math.max(0, offset) - flickable.originY - view.height*2 + closedPositionOffset*2
         }
     }
 
     NumberAnimation {
         id: scrollAnim
-        target: view
+        target: flickable
         properties: "contentY"
         duration: units.longDuration * 2
         easing.type: Easing.OutQuad
@@ -134,7 +133,7 @@ Item {
             bottom: scrim.top
         }
         factor: root.openFactor
-        flickable: view
+        flickable: root.flickable
         onOpenRequested: root.open();
         onCloseRequested: root.close();
     }
@@ -152,7 +151,7 @@ Item {
         color: "black"
         opacity: 0.4 * root.openFactor
         height: root.height + radius * 2
-        y: Math.min(view.height, Math.max(-radius, -view.contentY - view.originY - root.height + root.topPadding + root.bottomPadding + root.closedPositionOffset))
+        y: Math.min(view.height, Math.max(-radius, -flickable.contentY - flickable.originY - root.height + root.topPadding + root.bottomPadding + root.closedPositionOffset))
     }
 
     Timer {
@@ -160,7 +159,9 @@ Item {
         interval: 1000
         onTriggered: root.close();
     }
-    GridView {
+    
+    
+    Item {
         id: view
         anchors {
             fill: parent
@@ -169,7 +170,9 @@ Item {
             rightMargin: root.rightPadding
             bottomMargin: root.bottomPadding
         }
-
+        
+        property int headerHeight: Math.round(PlasmaCore.Units.gridUnit * 3)
+        
         opacity: {
             if (root.status == AppDrawer.Status.Open) {
                 return 1;
@@ -179,94 +182,254 @@ Item {
                 return root.openFactor;
             }
         }
-        
         visible: root.status !== AppDrawer.Status.Closed
-        cellWidth: view.width / Math.floor(view.width / ((root.availableCellHeight - root.reservedSpaceForLabel) + units.smallSpacing*4))
-        cellHeight: root.availableCellHeight
-        clip: true
-
-        cacheBuffer: contentHeight
-
-        property real oldContentY: contentY
-        property int movementDirection: AppDrawer.MovementDirection.None
-        onContentYChanged: {
-            if (contentY > oldContentY) {
-                movementDirection = AppDrawer.MovementDirection.Up;
-            } else {
-                movementDirection = AppDrawer.MovementDirection.Down;
-            }
-
-            oldContentY = contentY;
-            root.offset = contentY + view.originY + view.height*2 - root.closedPositionOffset*2
-        }
-        onMovementEnded: root.snapDrawerStatus()
-        onFlickEnded: movementEnded()
-
-       // boundsBehavior: Flickable.StopAtBounds
-
-        model: HomeScreenComponents.ApplicationListModel
-
-        header: Rectangle {
-            height: root.height - root.topPadding - root.bottomPadding - root.closedPositionOffset
-            property real oldHeight: height
-            onHeightChanged: {
-                if (root.status !== AppDrawer.Status.Open) {
-                    view.contentY = -view.height + root.closedPositionOffset;
+        
+        // listview/gridview header
+        Component {
+            id: headerComponent
+            Item {
+                id: offsetRect
+                anchors.left: parent.left
+                anchors.right: parent.right
+                height: root.height - root.topPadding - root.bottomPadding - root.closedPositionOffset
+                property real oldHeight: height
+                onHeightChanged: {
+                    if (root.status !== AppDrawer.Status.Open) {
+                        flickable.contentY = -view.height + root.closedPositionOffset;
+                    }
+                    oldHeight = height;
                 }
-                oldHeight = height;
-            }
-        }
-
-        delegate: DrawerDelegate {
-            id: delegate
-            width: view.cellWidth
-            height: view.cellHeight
-            reservedSpaceForLabel: root.reservedSpaceForLabel
-
-            onDragStarted: (imageSource, x, y, mimeData) => {
-                root.Drag.imageSource = imageSource;
-                root.Drag.hotSpot.x = x;
-                root.Drag.hotSpot.y = y;
-                root.Drag.mimeData = { "text/x-plasma-phone-homescreen-launcher": mimeData };
-
-                root.close()
-
-                root.dragStarted()
-                root.Drag.active = true;
-            }
-            onLaunch: (x, y, icon, title, storageId) => {
-                if (icon !== "") {
-                    NanoShell.StartupFeedback.open(
-                            icon,
-                            title,
-                            delegate.iconItem.Kirigami.ScenePosition.x + delegate.iconItem.width/2,
-                            delegate.iconItem.Kirigami.ScenePosition.y + delegate.iconItem.height/2,
-                            Math.min(delegate.iconItem.width, delegate.iconItem.height));
+                
+                PlasmaCore.ColorScope {
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.top: parent.bottom
+                    anchors.leftMargin: PlasmaCore.Units.largeSpacing
+                    anchors.rightMargin: PlasmaCore.Units.largeSpacing
+                    anchors.topMargin: PlasmaCore.Units.smallSpacing
+                    colorGroup: PlasmaCore.Theme.ComplementaryColorGroup
+                    
+                    RowLayout {
+                        id: gridViewHeader
+                        anchors.fill: parent
+                        spacing: PlasmaCore.Units.smallSpacing
+                        
+                        PlasmaExtra.Heading {
+                            color: "white"
+                            level: 2
+                            text: i18n("Applications")
+                        }
+                        Item { Layout.fillWidth: true }
+                        PC3.ToolButton {
+                            icon.name: "view-list-symbolic"
+                            implicitWidth: Math.round(PlasmaCore.Units.gridUnit * 2.1)
+                            implicitHeight: Math.round(PlasmaCore.Units.gridUnit * 2.1)
+                            onClicked: {
+                                if (!listViewLoader.active) {
+                                    listViewLoader.active = true;
+                                    flickable.contentY = 0; // jump to top
+                                }
+                            }
+                        }
+                        PC3.ToolButton {
+                            icon.name: "view-grid-symbolic"
+                            implicitWidth: Math.round(PlasmaCore.Units.gridUnit * 2.1)
+                            implicitHeight: Math.round(PlasmaCore.Units.gridUnit * 2.1)
+                            onClicked: {
+                                if (!gridViewLoader.active) {
+                                    gridViewLoader.active = true;
+                                    flickable.contentY = 0; // jump to top
+                                }
+                            }
+                        }
+                    }
                 }
-
-                HomeScreenComponents.ApplicationListModel.setMinimizedDelegate(index, delegate);
-                HomeScreenComponents.ApplicationListModel.runApplication(storageId);
-                root.launched();
-                closeTimer.restart();
             }
         }
-
-        PC3.ScrollBar.vertical: PC3.ScrollBar {
-            id: scrollabr
-            opacity: view.moving
+        
+        // listview/gridview scrollbar
+        PC3.ScrollBar {
+            id: scrollBar
+            opacity: root.flickable.moving
             interactive: false
             enabled: false
             Behavior on opacity {
                 OpacityAnimator {
-                    duration: units.longDuration * 2
+                    duration: PlasmaCore.Units.longDuration * 2
                     easing.type: Easing.InOutQuad
                 }
             }
-            implicitWidth: Math.round(units.gridUnit/3)
+            implicitWidth: Math.round(PlasmaCore.Units.gridUnit/3)
             contentItem: Rectangle {
                 radius: width/2
                 color: Qt.rgba(1, 1, 1, 0.3)
                 border.color: Qt.rgba(0, 0, 0, 0.4)
+            }
+        }
+        
+        // listview
+        Loader {
+            id: listViewLoader
+            active: false
+            onLoaded: {
+                root.flickable = item;
+                gridViewLoader.active = false;
+            }
+            
+            anchors.fill: parent
+            sourceComponent: ListView {
+                id: listView
+                header: Loader {
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    sourceComponent: headerComponent
+                }
+                footer: Item { height: view.headerHeight } // account for header translate
+                
+                clip: true
+                reuseItems: true
+                cacheBuffer: model.count * delegateHeight // delegate height
+                
+                property int delegateHeight: PlasmaCore.Units.gridUnit * 3
+                
+                property real oldContentY: contentY
+                property int movementDirection: AppDrawer.MovementDirection.None
+                onContentYChanged: {
+                    if (contentY > oldContentY) {
+                        movementDirection = AppDrawer.MovementDirection.Up;
+                    } else {
+                        movementDirection = AppDrawer.MovementDirection.Down;
+                    }
+
+                    oldContentY = contentY;
+                    root.offset = contentY + listView.originY + view.height*2 - root.closedPositionOffset*2
+                }
+                onMovementEnded: root.snapDrawerStatus()
+                onFlickEnded: movementEnded()
+
+                model: HomeScreenComponents.ApplicationListModel
+
+                delegate: DrawerListDelegate {
+                    id: delegate
+                    // offset for header
+                    transform: Translate { y: view.headerHeight }
+                    
+                    width: listView.width
+                    height: listView.delegateHeight
+                    reservedSpaceForLabel: root.reservedSpaceForLabel
+
+                    onDragStarted: (imageSource, x, y, mimeData) => {
+                        root.Drag.imageSource = imageSource;
+                        root.Drag.hotSpot.x = x;
+                        root.Drag.hotSpot.y = y;
+                        root.Drag.mimeData = { "text/x-plasma-phone-homescreen-launcher": mimeData };
+
+                        root.close()
+
+                        root.dragStarted()
+                        root.Drag.active = true;
+                    }
+                    onLaunch: (x, y, icon, title, storageId) => {
+                        if (icon !== "") {
+                            NanoShell.StartupFeedback.open(
+                                    icon,
+                                    title,
+                                    delegate.iconItem.Kirigami.ScenePosition.x + delegate.iconItem.width/2,
+                                    delegate.iconItem.Kirigami.ScenePosition.y + delegate.iconItem.height/2,
+                                    Math.min(delegate.iconItem.width, delegate.iconItem.height));
+                        }
+
+                        HomeScreenComponents.ApplicationListModel.setMinimizedDelegate(index, delegate);
+                        HomeScreenComponents.ApplicationListModel.runApplication(storageId);
+                        root.launched();
+                        closeTimer.restart();
+                    }
+                }
+                
+                PC3.ScrollBar.vertical: scrollBar
+            }
+        }
+        
+        // gridview
+        Loader {
+            id: gridViewLoader
+            active: true
+            onLoaded: {
+                root.flickable = item;
+                listViewLoader.active = false;
+            }
+            
+            anchors.fill: parent
+            sourceComponent: GridView {
+                id: gridView
+                header: Loader {
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    sourceComponent: headerComponent
+                }
+                footer: Item { height: view.headerHeight } // account for header translate
+                
+                cellWidth: view.width / Math.floor(view.width / ((root.availableCellHeight - root.reservedSpaceForLabel) + units.smallSpacing*4))
+                cellHeight: root.availableCellHeight
+                clip: true
+
+                cacheBuffer: contentHeight
+
+                property real oldContentY: contentY
+                property int movementDirection: AppDrawer.MovementDirection.None
+                onContentYChanged: {
+                    if (contentY > oldContentY) {
+                        movementDirection = AppDrawer.MovementDirection.Up;
+                    } else {
+                        movementDirection = AppDrawer.MovementDirection.Down;
+                    }
+
+                    oldContentY = contentY;
+                    root.offset = contentY + gridView.originY + view.height*2 - root.closedPositionOffset*2
+                }
+                onMovementEnded: root.snapDrawerStatus()
+                onFlickEnded: movementEnded()
+
+                model: HomeScreenComponents.ApplicationListModel
+
+                delegate: DrawerGridDelegate {
+                    id: delegate
+                    // offset for header
+                    transform: Translate { y: view.headerHeight }
+                    
+                    width: gridView.cellWidth
+                    height: gridView.cellHeight
+                    reservedSpaceForLabel: root.reservedSpaceForLabel
+
+                    onDragStarted: (imageSource, x, y, mimeData) => {
+                        root.Drag.imageSource = imageSource;
+                        root.Drag.hotSpot.x = x;
+                        root.Drag.hotSpot.y = y;
+                        root.Drag.mimeData = { "text/x-plasma-phone-homescreen-launcher": mimeData };
+
+                        root.close()
+
+                        root.dragStarted()
+                        root.Drag.active = true;
+                    }
+                    onLaunch: (x, y, icon, title, storageId) => {
+                        if (icon !== "") {
+                            NanoShell.StartupFeedback.open(
+                                    icon,
+                                    title,
+                                    delegate.iconItem.Kirigami.ScenePosition.x + delegate.iconItem.width/2,
+                                    delegate.iconItem.Kirigami.ScenePosition.y + delegate.iconItem.height/2,
+                                    Math.min(delegate.iconItem.width, delegate.iconItem.height));
+                        }
+
+                        HomeScreenComponents.ApplicationListModel.setMinimizedDelegate(index, delegate);
+                        HomeScreenComponents.ApplicationListModel.runApplication(storageId);
+                        root.launched();
+                        closeTimer.restart();
+                    }
+                }
+
+                PC3.ScrollBar.vertical: scrollBar
             }
         }
     }
