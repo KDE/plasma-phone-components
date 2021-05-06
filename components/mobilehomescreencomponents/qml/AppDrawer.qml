@@ -105,6 +105,7 @@ Item {
 
     onOffsetChanged: {
         if (!flickable.moving) {
+            flickable.offsetUpdatedContentY = true;
             flickable.contentY = Math.max(0, offset) - flickable.originY - view.height*2 + closedPositionOffset*2
         }
     }
@@ -292,6 +293,7 @@ Item {
                 
                 property int delegateHeight: PlasmaCore.Units.gridUnit * 3
                 
+                property bool offsetUpdatedContentY: false
                 property real oldContentY: contentY
                 property int movementDirection: AppDrawer.MovementDirection.None
                 onContentYChanged: {
@@ -302,7 +304,11 @@ Item {
                     }
 
                     oldContentY = contentY;
-                    root.offset = contentY + listView.originY + view.height*2 - root.closedPositionOffset*2
+                    let newOffset = contentY + listView.originY + view.height*2 - root.closedPositionOffset*2;
+                    if (offsetUpdatedContentY && newOffset !== root.offset) { // prevent infinite loop of constantly updating offsets and contentY
+                        root.offset = newOffset;
+                    }
+                    offsetUpdatedContentY = false;
                 }
                 onMovementEnded: root.snapDrawerStatus()
                 onFlickEnded: movementEnded()
@@ -373,8 +379,11 @@ Item {
                 cellHeight: root.availableCellHeight
                 clip: true
 
-                cacheBuffer: contentHeight
+                property int columns: Math.floor(view.width / cellWidth)
+                property int rows: Math.ceil(model.count / columns)
+                cacheBuffer: rows * cellHeight
 
+                property bool offsetUpdatedContentY: false
                 property real oldContentY: contentY
                 property int movementDirection: AppDrawer.MovementDirection.None
                 onContentYChanged: {
@@ -385,7 +394,11 @@ Item {
                     }
 
                     oldContentY = contentY;
-                    root.offset = contentY + gridView.originY + view.height*2 - root.closedPositionOffset*2
+                    let newOffset = contentY + gridView.originY + view.height*2 - root.closedPositionOffset*2;
+                    if (offsetUpdatedContentY && newOffset !== root.offset) { // prevent infinite loop of constantly updating offsets and contentY
+                        root.offset = newOffset;
+                    }
+                    offsetUpdatedContentY = false;
                 }
                 onMovementEnded: root.snapDrawerStatus()
                 onFlickEnded: movementEnded()
