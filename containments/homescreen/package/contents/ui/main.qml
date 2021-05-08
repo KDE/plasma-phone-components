@@ -12,6 +12,7 @@ import QtGraphicalEffects 1.0
 import org.kde.plasma.plasmoid 2.0
 import org.kde.plasma.core 2.0 as PlasmaCore
 import org.kde.plasma.components 3.0 as PlasmaComponents
+import org.kde.plasma.extras 2.0 as PlasmaExtra
 import org.kde.draganddrop 2.0 as DragDrop
 
 import org.kde.plasma.private.mobilehomescreencomponents 0.1 as HomeScreenComponents
@@ -76,13 +77,13 @@ FocusScope {
         }
         function onSnapHomeScreenPosition() {
             if (lastRequestedPosition < 0) {
-                appDrawer.open();
+                root.appDrawer.open();
             } else {
-                appDrawer.close();
+                root.appDrawer.close();
             }
         }
         function onRequestRelativeScroll(pos) {
-            appDrawer.offset -= pos.y;
+            root.appDrawer.offset -= pos.y;
             lastRequestedPosition = pos.y;
         }
     }
@@ -100,11 +101,11 @@ FocusScope {
         footer: favoriteStrip
         appletsLayout: homeScreenContents.appletsLayout
 
-        appDrawer: appDrawer
+        appDrawer: root.appDrawer
         contentWidth: Math.max(width, width * Math.ceil(homeScreenContents.itemsBoundingRect.width/width)) + (homeScreenContents.launcherDragManager.active ? width : 0)
         showAddPageIndicator: homeScreenContents.launcherDragManager.active
 
-        dragGestureEnabled: root.focus && appDrawer.status !== HomeScreenComponents.AppDrawer.Status.Open && !appletsLayout.editMode && !plasmoid.editMode && !homeScreenContents.launcherDragManager.active
+        dragGestureEnabled: root.focus && appDrawer && appDrawer.status !== HomeScreenComponents.AbstractAppDrawer.Status.Open && !appletsLayout.editMode && !plasmoid.editMode && !homeScreenContents.launcherDragManager.active
 
         HomeScreenComponents.HomeScreenContents {
             id: homeScreenContents
@@ -113,13 +114,88 @@ FocusScope {
         }
     }
 
-    HomeScreenComponents.AppDrawer {
-        id: appDrawer
+    // listview/gridview header
+    property int headerHeight: Math.round(PlasmaCore.Units.gridUnit * 3)
+    property string appDrawerType: "gridview" // gridview/listview
+    property alias appDrawer: appDrawerLoader.item
+    
+    Component {
+        id: headerComponent
+        PlasmaCore.ColorScope {
+            colorGroup: PlasmaCore.Theme.ComplementaryColorGroup
+            
+            RowLayout {
+                anchors.topMargin: PlasmaCore.Units.smallSpacing
+                anchors.leftMargin: PlasmaCore.Units.largeSpacing
+                anchors.rightMargin: PlasmaCore.Units.largeSpacing
+                anchors.fill: parent
+                spacing: PlasmaCore.Units.smallSpacing
+                
+                PlasmaExtra.Heading {
+                    color: "white"
+                    level: 2
+                    text: i18n("Applications")
+                }
+                Item { Layout.fillWidth: true }
+                PlasmaComponents.ToolButton {
+                    icon.name: "view-list-symbolic"
+                    implicitWidth: Math.round(PlasmaCore.Units.gridUnit * 2.1)
+                    implicitHeight: Math.round(PlasmaCore.Units.gridUnit * 2.1)
+                    onClicked: {
+                        if (root.appDrawerType !== "listview") {
+                            root.appDrawerType = "listview";
+                            appDrawer.flickable.contentY = 0; // jump to top
+                        }
+                    }
+                }
+                PlasmaComponents.ToolButton {
+                    icon.name: "view-grid-symbolic"
+                    implicitWidth: Math.round(PlasmaCore.Units.gridUnit * 2.1)
+                    implicitHeight: Math.round(PlasmaCore.Units.gridUnit * 2.1)
+                    onClicked: {
+                        if (root.appDrawerType !== "gridview") {
+                            root.appDrawerType = "gridview";
+                            appDrawer.flickable.contentY = 0; // jump to top
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    Component {
+        id: listViewDrawer
+        HomeScreenComponents.ListViewAppDrawer {
+            anchors.fill: parent
+            topPadding: plasmoid.availableScreenRect.y
+            bottomPadding: plasmoid.screenGeometry.height - plasmoid.availableScreenRect.height - plasmoid.availableScreenRect.y
+            closedPositionOffset: favoriteStrip.height
+            
+            headerItem: Loader {
+                sourceComponent: headerComponent
+            }
+            headerHeight: root.headerHeight
+        }
+    }
+    Component {
+        id: gridViewDrawer
+        HomeScreenComponents.GridViewAppDrawer {
+            anchors.fill: parent
+            topPadding: plasmoid.availableScreenRect.y
+            bottomPadding: plasmoid.screenGeometry.height - plasmoid.availableScreenRect.height - plasmoid.availableScreenRect.y
+            closedPositionOffset: favoriteStrip.height
+            
+            headerItem: Loader {
+                sourceComponent: headerComponent
+            }
+            headerHeight: root.headerHeight
+        }
+    }
+    
+    Loader {
+        id: appDrawerLoader
         anchors.fill: parent
-
-        topPadding: plasmoid.availableScreenRect.y
-        bottomPadding: plasmoid.screenGeometry.height - plasmoid.availableScreenRect.height - plasmoid.availableScreenRect.y
-        closedPositionOffset: favoriteStrip.height
+        sourceComponent: appDrawerType === "gridview" ? gridViewDrawer : listViewDrawer
     }
 
     HomeScreenComponents.FavoriteStrip {

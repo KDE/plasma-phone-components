@@ -15,7 +15,7 @@ DragHandler {
     yAxis.enabled: enabled
     xAxis.enabled: enabled
     property Flickable mainFlickable
-    property Launcher.AppDrawer appDrawer
+    property Launcher.AbstractAppDrawer appDrawer
     signal snapPage
     signal snapNextPage
     signal snapPrevPage
@@ -33,7 +33,7 @@ DragHandler {
         if (active) {
             if (root.appDrawer) {
                 if (__scrollDirection === DragGestureHandler.None) {
-                    if (root.appDrawer.offset > PlasmaCore.Units.gridUnit) {
+                    if (root.appDrawer.offset > PlasmaCore.Units.gridUnit * 2) {
 
                         __scrollDirection = DragGestureHandler.Vertical;
                         snapPage();

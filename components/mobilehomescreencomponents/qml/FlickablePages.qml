@@ -24,7 +24,7 @@ import org.kde.plasma.private.mobilehomescreencomponents 0.1 as HomeScreenCompon
 Flickable {
     id: mainFlickable
 
-    property AppDrawer appDrawer
+    property AbstractAppDrawer appDrawer
 
     readonly property int totalPages: Math.ceil(contentWidth / width)
     property int currentIndex: 0
