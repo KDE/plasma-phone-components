@@ -8,12 +8,14 @@ import QtQuick 2.4
 import QtQuick.Layouts 1.1
 import QtQuick.Window 2.2
 import QtGraphicalEffects 1.12
+import QtFeedback 5.0
 
 import org.kde.taskmanager 0.1 as TaskManager
 import org.kde.plasma.plasmoid 2.0
 import org.kde.plasma.core 2.0 as PlasmaCore
 import org.kde.plasma.components 2.0 as PlasmaComponents
 import org.kde.kquickcontrolsaddons 2.0
+import org.kde.kirigami 2.12 as Kirigami
 
 import org.kde.plasma.private.nanoshell 2.0 as NanoShell
 import org.kde.plasma.private.mobileshell 1.0 as MobileShell
@@ -49,6 +51,13 @@ PlasmaCore.ColorScope {
         onTriggered: {
             taskSwitcherLoader.setSource(Qt.resolvedUrl("TaskSwitcher.qml"), {"model": tasksModel});
         }
+    }
+
+    // vibration
+    HapticsEffect {
+        id: vibrate
+        intensity: 0.5
+        duration: Kirigami.Units.shortDuration
     }
 
     function minimizeAll() {
@@ -107,6 +116,9 @@ PlasmaCore.ColorScope {
             startMouseY = oldMouseY = mouse.y;
             taskSwitcher.offset = -taskSwitcher.height;
             activeButton = icons.childAt(mouse.x, mouse.y);
+            if (activeButton && activeButton.enabled) {
+                vibrate.start();
+            }
         }
         onPositionChanged: {
             let newButton = icons.childAt(mouse.x, mouse.y);

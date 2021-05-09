@@ -20,6 +20,7 @@ Item {
     property int fontSize: config.fontSize
     readonly property bool softwareRendering: GraphicsInfo.api === GraphicsInfo.Software
     signal clicked
+    signal pressed
 
     activeFocusOnTab: true
 
@@ -101,6 +102,7 @@ Item {
     MouseArea {
         id: mouseArea
         hoverEnabled: true
+        onPressed: root.pressed()
         onClicked: root.clicked()
         anchors.fill: parent
     }

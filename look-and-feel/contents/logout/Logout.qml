@@ -9,9 +9,11 @@
 import QtQuick 2.12
 import QtQuick.Layouts 1.12
 import QtQuick.Controls 2.8 as Controls
+import QtFeedback 5.0
 
 import org.kde.plasma.core 2.0 as PlasmaCore
 import org.kde.kcoreaddons 1.0 as KCoreAddons
+import org.kde.kirigami 2.12 as Kirigami
 
 import "../components"
 
@@ -47,8 +49,20 @@ PlasmaCore.ColorScope {
             closeAnim.execute(root.cancelRequested);
         }
     }
+    
+    // vibration
+    HapticsEffect {
+        id: vibrate
+        intensity: 0.5
+        duration: Kirigami.Units.longDuration
+    }
 
-    Component.onCompleted: openAnim.restart()
+    Component.onCompleted: {
+        openAnim.restart();
+        vibrate.duration = Kirigami.Units.longDuration;
+        vibrate.start();
+    }
+
     onVisibleChanged: {
         if (visible) {
             openAnim.restart()
@@ -132,6 +146,10 @@ PlasmaCore.ColorScope {
         ActionButton {
             iconSource: "system-reboot"
             text: i18nd("plasma_lookandfeel_org.kde.lookandfeel", "Restart")
+            onPressed: {
+                vibrate.duration = Kirigami.Units.shortDuration;
+                vibrate.start();
+            }
             onClicked: {
                 closeAnim.execute(root.rebootRequested);
             }
@@ -140,6 +158,10 @@ PlasmaCore.ColorScope {
         ActionButton {
             iconSource: "system-shutdown"
             text: i18nd("plasma_lookandfeel_org.kde.lookandfeel", "Shut Down")
+            onPressed: {
+                vibrate.duration = Kirigami.Units.shortDuration;
+                vibrate.start();
+            }
             onClicked: {
                 closeAnim.execute(root.haltRequested);
             }
@@ -151,6 +173,10 @@ PlasmaCore.ColorScope {
             Layout.alignment: Qt.AlignCenter
             iconSource: "dialog-cancel"
             text: i18nd("plasma_lookandfeel_org.kde.lookandfeel", "Cancel")
+            onPressed: {
+                vibrate.duration = Kirigami.Units.shortDuration;
+                vibrate.start();
+            }
             onClicked: {
                 closeAnim.execute(root.cancelRequested);
             }
