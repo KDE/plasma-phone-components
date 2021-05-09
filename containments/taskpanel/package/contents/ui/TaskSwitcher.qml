@@ -12,6 +12,7 @@ import org.kde.plasma.core 2.1 as PlasmaCore
 import org.kde.plasma.components 3.0 as PlasmaComponents
 import org.kde.plasma.private.nanoshell 2.0 as NanoShell
 import org.kde.plasma.private.mobileshell 1.0 as MobileShell
+import org.kde.kirigami 2.12 as Kirigami
 
 NanoShell.FullScreenOverlay {
     id: window
@@ -19,14 +20,17 @@ NanoShell.FullScreenOverlay {
     visible: false
     width: Screen.width
     height: Screen.height
+    
     property int offset: 0
-    property int overShoot: units.gridUnit * 2
+    property int overShoot: PlasmaCore.Units.gridUnit * 2
     property int tasksCount: window.model.count
     property int currentTaskIndex: -1
     property TaskManager.TasksModel model
 
     Component.onCompleted: plasmoid.nativeInterface.panel = window;
 
+    property int panelHeight: PlasmaCore.Units.gridUnit * 2
+    
     enum MovementDirection {
         None = 0,
         Up,
@@ -41,8 +45,11 @@ NanoShell.FullScreenOverlay {
     color: "transparent"
     // More controllable than the color property
     Rectangle {
+        id: backgroundRect
         anchors.fill: parent
-        color: Qt.rgba(0, 0, 0, 0.6)
+        anchors.topMargin: PlasmaCore.Units.gridUnit // don't cover panel
+        anchors.bottomMargin: PlasmaCore.Units.gridUnit * 2 // don't cover taskpanel
+        color: Qt.rgba(0, 0, 0, 0.4)
         opacity: Math.min(
             (Math.min(tasksView.contentY, tasksView.height) / tasksView.height),
             ((tasksView.contentHeight - tasksView.contentY - window.height) / tasksView.height))
@@ -52,13 +59,16 @@ NanoShell.FullScreenOverlay {
         if (window.model.count == 0) {
             return;
         }
+        MobileShell.HomeScreenControls.setHomeScreenOpacity(0);
+        root.minimizeAll();
 
         visible = true;
         scrollAnim.from = tasksView.contentY;
-        scrollAnim.to = window.height;
+        scrollAnim.to = window.height + window.panelHeight;
         scrollAnim.restart();
     }
     function hide() {
+        MobileShell.HomeScreenControls.setHomeScreenOpacity(1);
         if (!window.visible) {
             return;
         }
@@ -100,6 +110,7 @@ NanoShell.FullScreenOverlay {
                 activateAnim.delegate.z = 0;
                 activateAnim.delegate.scale = 1;
             }
+            MobileShell.HomeScreenControls.setHomeScreenOpacity(1);
         }
         MobileShell.HomeScreenControls.taskSwitcherVisible = visible;
     }
@@ -174,8 +185,11 @@ NanoShell.FullScreenOverlay {
 
     Flickable {
         id: tasksView
-        width: window.width
-        height: window.height
+        anchors.fill: backgroundRect
+        anchors.leftMargin: PlasmaCore.Units.largeSpacing
+        anchors.rightMargin: PlasmaCore.Units.largeSpacing
+        clip: true
+        
         contentWidth: width
         contentHeight: mainArea.implicitHeight
        // topMargin: flickingVertically ? -height : 0
@@ -264,22 +278,27 @@ NanoShell.FullScreenOverlay {
 
             Grid {
                 id: grid
-                anchors {
-                    left: parent.left
-                    right: parent.right
-                }
-                columns: 2
-                y: parent.height - height - window.height
+                anchors.left: parent.left
+                anchors.right: parent.right
+                columns: window.height > window.width ? 2 : 3 
+                y: parent.height - height - window.height - window.panelHeight
 
+                // TODO
+                property int cellWidth: tasksView.width / columns
+                property int cellHeight: (tasksView.height - PlasmaCore.Units.largeSpacing * 2) / 2
+                
                 Behavior on y {
                     NumberAnimation {
-                        duration: units.longDuration
+                        duration: PlasmaCore.Units.longDuration
                         easing.type: Easing.InOutQuad
                     }
                 }
                 Repeater {
                     model: window.model
-                    delegate: Task {}
+                    delegate: Task {
+                        width: grid.cellWidth
+                        height: grid.cellHeight
+                    }
                 }
 
                 move: Transition {
@@ -287,29 +306,11 @@ NanoShell.FullScreenOverlay {
                     enabled: false
                     NumberAnimation {
                         properties: "x,y"
-                        duration: units.longDuration
+                        duration: PlasmaCore.Units.longDuration
                         easing.type: Easing.InOutQuad
                     }
                 }
             }
-        }
-
-    }
-
-    PlasmaComponents.RoundButton {
-        anchors {
-            horizontalCenter: parent.horizontalCenter
-            bottom: parent.bottom
-        }
-        icon.name: "start-here-kde"
-        icon.width: units.iconSizes.medium
-        icon.height: units.iconSizes.medium
-        onClicked: {
-            currentTaskIndex = -1;
-            window.hide();
-            //plasmoid.nativeInterface.showDesktop = true;
-
-            root.minimizeAll();
         }
     }
 }

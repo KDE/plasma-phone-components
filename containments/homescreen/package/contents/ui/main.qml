@@ -38,6 +38,17 @@ FocusScope {
 
 //END functions
 
+    opacity: 1
+    Behavior on opacity { 
+        NumberAnimation { duration: PlasmaCore.Units.shortDuration } 
+    }
+    Connections {
+        target: MobileShell.HomeScreenControls
+        function onSetHomeScreenOpacity(opacity) {
+            root.opacity = opacity;
+        }
+    }
+
     property bool componentComplete: false
     onWidthChanged: recalculateMaxFavoriteCount()
     onHeightChanged:recalculateMaxFavoriteCount()

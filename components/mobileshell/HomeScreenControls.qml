@@ -15,6 +15,7 @@ QtObject {
     signal resetHomeScreenPosition()
     signal snapHomeScreenPosition()
     signal requestRelativeScroll(point pos)
+    signal setHomeScreenOpacity(int opacity)
     property Item homeScreen
     property QtObject homeScreenWindow
     property bool homeScreenVisible: true

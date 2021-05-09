@@ -13,8 +13,6 @@ import org.kde.plasma.components 3.0 as PlasmaComponents
 
 Item {
     id: delegate
-    width: window.width/2
-    height: window.height/2
 
     //Workaround
     property bool active: model.IsActive
@@ -48,11 +46,12 @@ Item {
 
     Component.onCompleted: syncDelegateGeometry();
 
-    Item {
+    PlasmaCore.ColorScope {
         anchors {
             fill: parent
-            margins: units.smallSpacing
+            margins: PlasmaCore.Units.smallSpacing
         }
+        colorGroup: PlasmaCore.Theme.ComplementaryColorGroup
 
         SequentialAnimation {
             id: slideAnim
@@ -61,7 +60,7 @@ Item {
                 id: internalSlideAnim
                 target: background
                 properties: "x"
-                duration: units.longDuration
+                duration: PlasmaCore.Units.longDuration
                 easing.type: Easing.InOutQuad
             }
             ScriptAction {
@@ -77,8 +76,7 @@ Item {
 
             width: parent.width
             height: parent.height
-            radius: units.smallSpacing
-            color: theme.backgroundColor
+            color: Qt.rgba(0, 0, 0, 0.6) // theme.backgroundColor
             opacity: 1 * (1-Math.abs(x)/width)
 
             MouseArea {
@@ -106,47 +104,50 @@ Item {
                 }
 
                 ColumnLayout {
-                    anchors {
-                        fill: parent
-                        margins: units.smallSpacing
+                    anchors.fill: parent
+                    spacing: 0
+                    
+                    Rectangle {
+                        color: Qt.rgba(255, 255, 255, 0.7)
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        Loader {
+                            id: pipeWireLoader
+                            anchors.fill: parent
+                            source: Qt.resolvedUrl("./Thumbnail.qml")
+                            onStatusChanged: {
+                                if (status === Loader.Error) {
+                                    source = Qt.resolvedUrl("./TaskIcon.qml");
+                                }
+                            }
+                        }
                     }
                     
                     RowLayout {
                         z: 99
+                        Layout.margins: PlasmaCore.Units.smallSpacing
                         Layout.fillWidth: true
-                        Layout.maximumHeight: units.gridUnit
+                        spacing: PlasmaCore.Units.smallSpacing
                         PlasmaCore.IconItem {
-                            Layout.fillHeight: true
-                            Layout.preferredWidth: height
+                            Layout.preferredWidth: PlasmaCore.Units.iconSizes.smallMedium
+                            Layout.preferredHeight: PlasmaCore.Units.iconSizes.smallMedium
                             usesPlasmaTheme: false
                             source: model.decoration
                         }
                         PlasmaComponents.Label {
                             Layout.fillWidth: true
-                            horizontalAlignment: Text.AlignHCenter
+                            horizontalAlignment: Text.AlignLeft
                             elide: Text.ElideRight
                             text: model.display
-                            color: theme.textColor
                         }
                         PlasmaComponents.ToolButton {
                             z: 99
-                            icon.name: "window-close"
-                            icon.width: units.iconSizes.medium
-                            icon.height: units.iconSizes.medium
+                            icon.name: "mobile-close-app"
+                            icon.width: PlasmaCore.Units.iconSizes.small
+                            icon.height: PlasmaCore.Units.iconSizes.small
                             onClicked: {
                                 slideAnim.to = -background.width*2;
                                 slideAnim.running = true;
-                            }
-                        }
-                    }
-                    Loader {
-                        id: pipeWireLoader
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
-                        source: Qt.resolvedUrl("./Thumbnail.qml")
-                        onStatusChanged: {
-                            if (status === Loader.Error) {
-                                source = Qt.resolvedUrl("./TaskIcon.qml");
                             }
                         }
                     }
