@@ -34,6 +34,13 @@ Item {
     width: 480
     height: 30
 
+    // set height binding to top panel API
+    Binding {
+        target: MobileShell.TopPanelControls
+        property: "panelHeight"
+        value: root.height
+    }
+
     Plasmoid.backgroundHints: showingApp ? PlasmaCore.Types.StandardBackground : PlasmaCore.Types.NoBackground
 
     property Item toolBox
