@@ -5,9 +5,9 @@
 
 #pragma once
 
+#include <KConfigGroup>
 #include <KQuickAddons/ManagedConfigModule>
-
-#include "mobileshellsettings.h"
+#include <KSharedConfig>
 
 class KCMMobileShell : public KQuickAddons::ManagedConfigModule
 {
