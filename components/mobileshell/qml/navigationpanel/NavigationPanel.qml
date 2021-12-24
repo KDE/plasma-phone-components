@@ -42,6 +42,10 @@ Item {
         source: icons
     }
     
+    MobileShell.Haptics {
+        id: haptics
+    }
+    
     MouseArea {
         id: mouseArea
         anchors.fill: parent
@@ -55,11 +59,14 @@ Item {
         property bool opening: false
         
         property NavigationPanelButton activeButton
-
+        
         onPressed: {
             startMouseX = oldMouseX = mouse.y;
             startMouseY = oldMouseY = mouse.y;
             activeButton = icons.childAt(mouse.x, mouse.y);
+            if (activeButton && activeButton.enabled) {
+                haptics.vibrate();
+            }
         }
         
         onPositionChanged: {

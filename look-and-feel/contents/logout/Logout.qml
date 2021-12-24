@@ -13,6 +13,8 @@ import QtQuick.Controls 2.8 as Controls
 import org.kde.plasma.core 2.0 as PlasmaCore
 import org.kde.kcoreaddons 1.0 as KCoreAddons
 
+import org.kde.plasma.private.mobileshell 1.0 as MobileShell
+
 import org.kde.plasma.private.sessions 2.0
 
 PlasmaCore.ColorScope {
@@ -27,6 +29,15 @@ PlasmaCore.ColorScope {
     signal cancelRequested()
     signal lockScreenRequested()
 
+    MobileShell.Haptics {
+        id: haptics
+    }
+    
+    Component.onCompleted: {
+        openAnim.restart();
+        haptics.vibrate();
+    }
+    
     Controls.Action {
         onTriggered: root.cancelRequested()
         shortcut: "Escape"
@@ -46,7 +57,6 @@ PlasmaCore.ColorScope {
         }
     }
 
-    Component.onCompleted: openAnim.restart()
     onVisibleChanged: {
         if (visible) {
             openAnim.restart()
@@ -133,6 +143,9 @@ PlasmaCore.ColorScope {
             onClicked: {
                 closeAnim.execute(root.rebootRequested);
             }
+            onPressed: {
+                haptics.vibrate();
+            }
         }
 
         ActionButton {
@@ -140,6 +153,9 @@ PlasmaCore.ColorScope {
             text: i18nd("plasma_lookandfeel_org.kde.lookandfeel", "Shut Down")
             onClicked: {
                 closeAnim.execute(root.haltRequested);
+            }
+            onPressed: {
+                haptics.vibrate();
             }
         }
 
@@ -151,6 +167,9 @@ PlasmaCore.ColorScope {
             text: i18nd("plasma_lookandfeel_org.kde.lookandfeel", "Cancel")
             onClicked: {
                 closeAnim.execute(root.cancelRequested);
+            }
+            onPressed: {
+                haptics.vibrate();
             }
         }
     }
