@@ -143,9 +143,6 @@ PlasmaCore.ColorScope {
             onClicked: {
                 closeAnim.execute(root.rebootRequested);
             }
-            onPressed: {
-                haptics.vibrate();
-            }
         }
 
         ActionButton {
@@ -153,9 +150,6 @@ PlasmaCore.ColorScope {
             text: i18nd("plasma_lookandfeel_org.kde.lookandfeel", "Shut Down")
             onClicked: {
                 closeAnim.execute(root.haltRequested);
-            }
-            onPressed: {
-                haptics.vibrate();
             }
         }
 
@@ -167,9 +161,6 @@ PlasmaCore.ColorScope {
             text: i18nd("plasma_lookandfeel_org.kde.lookandfeel", "Cancel")
             onClicked: {
                 closeAnim.execute(root.cancelRequested);
-            }
-            onPressed: {
-                haptics.vibrate();
             }
         }
     }

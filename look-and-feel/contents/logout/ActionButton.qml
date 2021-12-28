@@ -8,6 +8,8 @@ import QtQuick 2.8
 import org.kde.plasma.core 2.0 as PlasmaCore
 import org.kde.plasma.components 3.0 as PlasmaComponents3
 
+import org.kde.plasma.private.mobileshell 1.0 as MobileShell
+
 Item {
     id: root
     property alias text: label.text
@@ -37,6 +39,12 @@ Item {
             }
     }
 
+    MobileShell.Haptics {
+        id: haptics
+    }
+    
+    onPressed: haptics.vibrate();
+    
     Rectangle {
         id: iconCircle
         anchors.centerIn: icon
