@@ -18,4 +18,6 @@ panel.height = 1.25 * gridUnit; // HACK: supposed to be gridUnit + smallSpacing,
 
 var bottomPanel = new Panel("org.kde.phone.taskpanel")
 bottomPanel.location = "bottom";
-bottomPanel.height = 2 * gridUnit;
+// put panel above windows, and just high enough to be able to register gestures
+bottomPanel.hiding = "windowsbelow"; // VisibilityMode::WindowsGoBelow
+bottomPanel.height = 8;

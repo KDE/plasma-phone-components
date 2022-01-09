@@ -40,5 +40,6 @@ NotificationsWidget 1.0 widgets/notifications/NotificationsWidget.qml
 
 # /
 singleton HomeScreenControls 1.0 HomeScreenControls.qml
+singleton Shell 1.0 Shell.qml
 singleton TaskPanelControls 1.0 TaskPanelControls.qml
 singleton TopPanelControls 1.0 TopPanelControls.qml

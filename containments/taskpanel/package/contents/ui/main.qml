@@ -21,6 +21,7 @@ import org.kde.plasma.phone.taskpanel 1.0 as TaskPanel
 
 PlasmaCore.ColorScope {
     id: root
+    width: 360
     colorGroup: showingApp ? PlasmaCore.Theme.HeaderColorGroup : PlasmaCore.Theme.ComplementaryColorGroup
     
     Plasmoid.backgroundHints: PlasmaCore.Types.NoBackground
@@ -157,6 +158,7 @@ PlasmaCore.ColorScope {
         id: panel
         anchors.fill: parent
         taskSwitcher: root.taskSwitcher
+        opacity: 0
         
         backgroundColor: {
             if (taskSwitcher.visible) {
@@ -179,7 +181,7 @@ PlasmaCore.ColorScope {
     states: [
         State {
             name: "landscape"
-            when: Screen.width > Screen.height
+            when: MobileShell.Shell.orientation === MobileShell.Shell.Landscape
             PropertyChanges {
                 target: plasmoid.nativeInterface
                 location: PlasmaCore.Types.RightEdge
@@ -191,7 +193,7 @@ PlasmaCore.ColorScope {
             }
         }, State {
             name: "portrait"
-            when: Screen.width <= Screen.height
+            when: MobileShell.Shell.orientation === MobileShell.Shell.Portrait
             PropertyChanges {
                 target: plasmoid
                 height: PlasmaCore.Units.gridUnit
